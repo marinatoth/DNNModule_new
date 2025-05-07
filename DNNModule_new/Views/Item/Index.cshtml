@@ -1,0 +1,3668 @@
+﻿@inherits DotNetNuke.Web.Mvc.Framework.DnnWebViewPage<IEnumerable<Compare.Dnn.DNNModule_new.Models.Item>>
+
+@using System.Text.RegularExpressions
+@using DotNetNuke.Web.Mvc.Helpers
+
+
+<div id="Items-@Dnn.ModuleContext.ModuleId">
+    @if (Model.Count() == 0)
+    {
+        <p>@Dnn.LocalizeString("NoItems")</p>
+    }
+    else
+    {
+        <ul class="tm_tl">
+            @foreach (var item in Model)
+            {
+                <li class="tm_t">
+                    <h3>@item.ItemName</h3>
+                    <div class="tm_td">@item.ItemDescription</div>
+                    @{
+                        if (Dnn.ModuleContext.IsEditable)
+                        {
+                            <div>
+                                <a href="@Url.Action("Edit", "Item", new {ctl = "Edit", itemId = item.ItemId})">@Dnn.LocalizeString("EditItem")</a>
+                                <a href="@Url.Action("Delete", "Item", new {itemId = item.ItemId})">@Dnn.LocalizeString("DeleteItem")</a>
+                            </div>
+                        }
+                    }
+
+                </li>
+            }
+        </ul>
+    }
+</div>
+
+<title>Termék Összehasonlító</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            padding: 2rem;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            overflow-x: auto; /* Enable horizontal scrolling if needed */
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: #2c3e50;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 2rem;
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            border-radius: 8px;
+            overflow: hidden;
+            table-layout: fixed; /* Ensure consistent column widths */
+        }
+
+        .comparison-table th {
+            background-color: #3498db;
+            color: white;
+            text-align: left;
+            padding: 1rem;
+            font-weight: bold;
+            white-space: nowrap; /* Prevent header text from wrapping */
+        }
+
+        .comparison-table th:first-child {
+            width: 180px; /* Fixed width for property column */
+        }
+
+        .comparison-table td {
+            padding: 0.8rem 1rem;
+            border-bottom: 1px solid #eee;
+            word-break: break-word; /* Allow words to break if needed */
+        }
+
+        .comparison-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .comparison-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .dropdown-row td {
+            padding: 1rem;
+        }
+
+        .dropdown-row select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background-color: white;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .dropdown-row select:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
+        }
+
+        .property-label {
+            font-weight: bold;
+        }
+
+        .better-value {
+            background-color: #a8f0c6 !important;
+            font-weight: bold;
+        }
+
+        .tied-value {
+            background-color: #fff2cc !important; /* Light yellow for tied values */
+            font-weight: bold;
+        }
+
+        .points-row {
+            font-weight: bold;
+            background-color: #ebf5ff;
+            border-top: 2px solid #3498db;
+            border-bottom: 2px solid #3498db;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .points-row td {
+            font-size: 1.3rem;
+            padding: 1.2rem 1rem;
+            color: #2c3e50;
+        }
+
+        .add-product-btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            font-size: 20px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 5px;
+            transition: background-color 0.2s;
+        }
+
+        .add-product-btn:hover {
+            background-color: #2980b9;
+        }
+
+        .th-with-button {
+            display: flex;
+            align-items: center;
+        }
+
+        .remove-column-btn {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            font-size: 14px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 5px;
+            transition: background-color 0.2s;
+            vertical-align: middle;
+        }
+
+        .remove-column-btn:hover {
+            background-color: #c0392b;
+        }
+
+        @*@media (max-width: 768px) {
+            .comparison-table {
+                font-size: 0.85rem;
+            }
+
+            .comparison-table th,
+            .comparison-table td {
+                padding: 0.5rem;
+            }
+        }*@
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Termék Összehasonlító</h1>
+
+        <table id="comparison-table" class="comparison-table">
+            <thead>
+                <tr id="header-row">
+                    <th>Tulajdonság</th>
+                    <th data-product-id="1">Termék 1</th>
+                    <th data-product-id="2">Termék 2</th>
+                    <th class="th-with-button">
+                        <button id="add-product-btn" class="add-product-btn" title="Új termék hozzáadása">+</button>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="dropdown-row" id="dropdown-row">
+                    <td class="property-label">Termék választása</td>
+                    <td data-product-id="1">
+                        <select id="product1" onchange="updateComparison(1)">
+                            <option value="">Válassz terméket...</option>
+                        </select>
+                    </td>
+                    <td data-product-id="2">
+                        <select id="product2" onchange="updateComparison(2)">
+                            <option value="">Válassz terméket...</option>
+                        </select>
+                    </td>
+                    <td></td>
+                </tr>
+                <tr class="points-row" id="points-row">
+                    <td class="property-label">Összpontszám</td>
+                    <td id="product1-total-points" data-product-id="1">-</td>
+                    <td id="product2-total-points" data-product-id="2">-</td>
+                    <td></td>
+                </tr>
+                <!-- Property rows will be populated dynamically -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // Product data defined directly in the code to avoid CORS issues
+        const productData = [
+            {
+                "Termék neve": "SMARTWitness CRX |8-csatornás 4G Fleet Video és Data Recording System",
+                "sku": "SM1",
+                "Ár": {
+                    "Value": "195 030 Ft",
+                    "Point": 0.572
+                },
+                "Maximális videófelbontás": {
+                    "Value": "1080p (1920x1080) Full HD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "30 FPS",
+                    "Point": 0.333
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Legfeljebb 8 egyedi szög",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "140-159°",
+                    "Point": 0.087
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Opcionális, beleértve",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen, letilthatók",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "Angol/spanyol/kínai/orosz",
+                    "Point": 0.5
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "Nem",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "FCC, CE, RoHS",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "1TB or 2TB SSD",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": "1-8",
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-10° C − 60° C (14° F − 140° F)",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "2 éves gyártó",
+                    "Point": 0.8
+                }
+            },
+            {
+                "Termék neve": "Smartwitness CP4S |4-csatornás 4G digitális videofelvevő rendszer flottákhoz",
+                "sku": "Sm2",
+                "Ár": {
+                    "Value": "47 480 Ft",
+                    "Point": 0.978
+                },
+                "Maximális videófelbontás": {
+                    "Value": "1080p (1920x1080) Full HD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "15 FPS",
+                    "Point": 0.0
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Legfeljebb 4 egyedi szög",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "360°",
+                    "Point": 1.0
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Igen, beépített",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "Angol/spanyol/kínai/orosz",
+                    "Point": 0.5
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "Nem",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "FCC, CE, RoHS",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "SD, 128/258gb, Class 10",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": "1-4",
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-10° C − 55° C (14° F − 131° F)",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "2 éves gyártó",
+                    "Point": 0.8
+                }
+            },
+            {
+                "Termék neve": "Smartwitness KP2 kettős arcú flotta telematika 4G LTE Dash Cam w/ ADAS & DMS",
+                "sku": "Sm3",
+                "Ár": {
+                    "Value": "39 530 Ft",
+                    "Point": 1.0
+                },
+                "Maximális videófelbontás": {
+                    "Value": "1080p (1920x1080) Full HD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "30 FPS",
+                    "Point": 0.333
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Elülső + belső",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "120-139°",
+                    "Point": 0.0
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Igen, beépített",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen, letilthatók",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "angol",
+                    "Point": 0.5
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "Nem",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "RoHS, FCC, CE, IC, UKCA, E-Mark, ISO",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "SD, 64/128gb, Class 10",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": "1-2",
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-10° C − 55° C (14° F − 131° F)",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "2 éves gyártó",
+                    "Point": 0.8
+                }
+            },
+            {
+                "Termék neve": "Blackvue DR970X-Box-IR-Plus Dash Cam |A diszkrét és a biztonságos előlap + belső felvétel érdekében",
+                "sku": "Bl24",
+                "Ár": {
+                    "Value": "191 290 Ft",
+                    "Point": 0.582
+                },
+                "Maximális videófelbontás": {
+                    "Value": "4K (3840x2160) UHD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "30 FPS",
+                    "Point": 0.333
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Elülső + belső",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "160-180°",
+                    "Point": 0.176
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Igen, beépített",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen, letilthatók",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "angol",
+                    "Point": 0.5
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "1 perc",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "FCC, IC, CE, UKCA, RCM, Telec, WEEE, RoHS",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD, 64/128/256/512gb, Class 10",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": 2,
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-20°C – 70°C (-4°F – 158°F )",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "2 éves gyártó",
+                    "Point": 0.8
+                }
+            },
+            {
+                "Termék neve": "Blackvue DR970x-Box-plus Dash Cam |Diszkrét és biztonságos elülső + hátsó felvétel érdekében",
+                "sku": "Bl25",
+                "Ár": {
+                    "Value": "180 260 Ft",
+                    "Point": 0.613
+                },
+                "Maximális videófelbontás": {
+                    "Value": "4K (3840x2160) UHD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "30 FPS",
+                    "Point": 0.333
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Elülső hátul",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "140-159°",
+                    "Point": 0.087
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Igen, beépített",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen, letilthatók",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "angol",
+                    "Point": 0.5
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Automatikus",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "2 perc",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "FCC, IC, CE, UKCA, RCM, Telec, WEEE, RoHS",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD, 64/128/256/512gb, Class 10",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": 2,
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-20°C – 70°C (-4°F – 158°F )",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "2 éves gyártó",
+                    "Point": 0.8
+                }
+            },
+            {
+                "Termék neve": "Garmin Dash CAM X110 |Compact 1080p felvétel hangvezérléssel",
+                "sku": "Ga4",
+                "Ár": {
+                    "Value": "72 100 Ft",
+                    "Point": 0.91
+                },
+                "Maximális videófelbontás": {
+                    "Value": "1080p (1920x1080) Full HD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "30 FPS",
+                    "Point": 0.333
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Csak elöl",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "140-159°",
+                    "Point": 0.087
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Igen, beépített",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen, letilthatók",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "angol",
+                    "Point": 0.5
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "FCC, CE",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD, 8/16/32/64/128/256/512gb, Class 10",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": 1,
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-20° C − 55° C (-4° F − 141° F)",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "1 éves gyártó",
+                    "Point": 0.5
+                }
+            },
+            {
+                "Termék neve": "Garmin Dash Cam Mini 3 |Szuper kompakt hangvezérelt műszerfal",
+                "sku": "Ga5",
+                "Ár": {
+                    "Value": "55 140 Ft",
+                    "Point": 0.957
+                },
+                "Maximális videófelbontás": {
+                    "Value": "1080p (1920x1080) Full HD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "30 FPS",
+                    "Point": 0.333
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Csak elöl",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "140-159°",
+                    "Point": 0.087
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Nem",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen, letilthatók",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "angol",
+                    "Point": 0.5
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "FCC, CE",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD, 8/16/32/64/128/256/512gb, Class 10",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": 1,
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-20° C − 55° C (-4° F − 141° F)",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "1 éves gyártó",
+                    "Point": 0.5
+                }
+            },
+            {
+                "Termék neve": "Blackvue DR970x-2CH plus Ultimate Dash Cam Bundle",
+                "sku": "Bl6",
+                "Ár": {
+                    "Value": "347 800 Ft",
+                    "Point": 0.152
+                },
+                "Maximális videófelbontás": {
+                    "Value": "4K (3840x2160) UHD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "30 FPS",
+                    "Point": 0.333
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Elülső hátul",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "160-180°",
+                    "Point": 0.176
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Igen, beépített",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen, letilthatók",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "angol",
+                    "Point": 0.5
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "1/2/3 perc",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "FCC, CE, TELEC, RoHS, KCC, WEEE",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD, 64/128/256gb, Class 10",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": 2,
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-20° C − 70° C (-4° F − 158° F)",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "2 éves gyártó",
+                    "Point": 0.8
+                }
+            },
+            {
+                "Termék neve": "Blackvue DR590X-2CH-Plus 1080p Dual Lens Dash Cam elülső és hátul wifi",
+                "sku": "Bl7",
+                "Ár": {
+                    "Value": "86 530 Ft",
+                    "Point": 0.871
+                },
+                "Maximális videófelbontás": {
+                    "Value": "1080p (1920x1080) Full HD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "30 FPS",
+                    "Point": 0.333
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Elülső hátul",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "120-139°",
+                    "Point": 0.0
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Opcionális, kiegészítő",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen, letilthatók",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "angol",
+                    "Point": 0.5
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "1/2/3 perc",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "FCC, CE, TELEC, RoHS, KCC, WEEE",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD, 32/64/128/256gb, Class 10",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": 2,
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-20° C − 70° C (-4° F − 158° F)",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "2 éves gyártó",
+                    "Point": 0.8
+                }
+            },
+            {
+                "Termék neve": "Blackvue DR590X-1CH 1080p 60fps Egy lencse wifi",
+                "sku": "Bl8",
+                "Ár": {
+                    "Value": "57 680 Ft",
+                    "Point": 0.95
+                },
+                "Maximális videófelbontás": {
+                    "Value": "1080p (1920x1080) Full HD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "60 FPS",
+                    "Point": 1.0
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Csak elöl",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "120-139°",
+                    "Point": 0.0
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Opcionális, kiegészítő",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen, letilthatók",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "angol",
+                    "Point": 0.5
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "Állítható",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "FCC, CE, RoHS",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD, 32/64/128/256gb, Class 10",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": "1-2",
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-20° C − 70° C (-4° F − 158° F)",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "2 éves gyártó",
+                    "Point": 0.8
+                }
+            },
+            {
+                "Termék neve": "Thinkware F790 kettős objektív dashcam az első + hátsó felvételhez",
+                "sku": "Th9",
+                "Ár": {
+                    "Value": "118 760 Ft",
+                    "Point": 0.782
+                },
+                "Maximális videófelbontás": {
+                    "Value": "1080p (1920x1080) Full HD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "30 FPS",
+                    "Point": 0.333
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Elülső hátul",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "140-159°",
+                    "Point": 0.087
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Igen, beépített",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen, letilthatók",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "Angol/ kínai/ francia/ német/ olasz/ japán/ koreai/ portugál/ orosz/ spanyol/ thaiföldi/ cseh",
+                    "Point": 1.0
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "Nem",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "FCC, CE, RoHS",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD, 32/64/128gb, Class 10",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": 2,
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-10° C − 60° C (14° F − 140° F)",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "1 éves gyártó",
+                    "Point": 0.5
+                }
+            },
+            {
+                "Termék neve": "Thinkware F790 Single Lens Dashcam előre néző felvételhez",
+                "sku": "Th10",
+                "Ár": {
+                    "Value": "84 830 Ft",
+                    "Point": 0.875
+                },
+                "Maximális videófelbontás": {
+                    "Value": "1080p (1920x1080) Full HD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "30 FPS",
+                    "Point": 0.333
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Csak elöl",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "140-159°",
+                    "Point": 0.087
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Igen, beépített",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen, letilthatók",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "Angol/ kínai/ francia/ német/ olasz/ japán/ koreai/ portugál/ orosz/ spanyol/ thaiföldi/ cseh",
+                    "Point": 1.0
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Auto",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "Nem",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "FCC, CE, RoHS",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD, 16/32/64/128gb, Class 10",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": 1,
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-10° C − 60° C (14° F − 140° F)",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "1 éves gyártó",
+                    "Point": 0.5
+                }
+            },
+            {
+                "Termék neve": "Thinkware Q200 2K QHD elülső + hátsó dashcam Wi-Fi és ADAS-val",
+                "sku": "Th11",
+                "Ár": {
+                    "Value": "72 100 Ft",
+                    "Point": 0.91
+                },
+                "Maximális videófelbontás": {
+                    "Value": "2K (2560x1440) QHD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "",
+                    "Point": 0.5
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Elülső hátul",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "120-139°",
+                    "Point": 0.0
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Opcionális, beleértve",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "Angol/multi",
+                    "Point": 0.6
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "FCC",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD, 32/64/128/256gb, Class 10",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": 2,
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-10° C − 60° C (14° F − 140° F)",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "1 éves gyártó",
+                    "Point": 0.5
+                }
+            },
+            {
+                "Termék neve": "Thinkware Q850 2K QHD Elülső + Hátsó dashcam Wi-Fi és Super Night Vision segítségével",
+                "sku": "Th12",
+                "Ár": {
+                    "Value": "127 240 Ft",
+                    "Point": 0.759
+                },
+                "Maximális videófelbontás": {
+                    "Value": "2K (2560x1440) QHD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "",
+                    "Point": 0.5
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Elülső hátul",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "120-139°",
+                    "Point": 0.0
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Igen, beépített",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "Angol/multi",
+                    "Point": 0.6
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "FCC",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD, 32/64/128/256gb, Class 10",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": 2,
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-10° C − 60° C (14° F − 140° F)",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "1 éves gyártó",
+                    "Point": 0.5
+                }
+            },
+            {
+                "Termék neve": "Blackvue DR770x-Box-teherautó 3-csatornás, külső hátsó",
+                "sku": "Bl13",
+                "Ár": {
+                    "Value": "190 870 Ft",
+                    "Point": 0.584
+                },
+                "Maximális videófelbontás": {
+                    "Value": "1080p (1920x1080) Full HD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "60 FPS",
+                    "Point": 1.0
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Elülső + belső + hátsó",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "160-180°",
+                    "Point": 0.176
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Igen, beépített",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen, letilthatók",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "angol",
+                    "Point": 0.5
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "1 perc",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "FCC, IC, CE, UKCA, RCM, Telec, WEEE, RoHS",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD, 64/128/256gb, Class 10",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": 3,
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-20°C – 70°C (-4°F – 158°F )",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "2 éves gyártó",
+                    "Point": 0.8
+                }
+            },
+            {
+                "Termék neve": "Thinkware Q850 2K QHD előre néző dashcam Wi-Fi és Super Night Vision-val",
+                "sku": "Th14",
+                "Ár": {
+                    "Value": "84 830 Ft",
+                    "Point": 0.875
+                },
+                "Maximális videófelbontás": {
+                    "Value": "2K (2560x1440) QHD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "",
+                    "Point": 0.5
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Csak elöl",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "120-139°",
+                    "Point": 0.0
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Igen, beépített",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "Angol/multi",
+                    "Point": 0.6
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "FCC",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD, 32/64/128/256gb, Class 10",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": 1,
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-10° C − 60° C (14° F − 140° F)",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "1 éves gyártó",
+                    "Point": 0.5
+                }
+            },
+            {
+                "Termék neve": "Blackvue DR770X Box Truck Pro - Hármas kameravédelem a teherautók számára",
+                "sku": "Bl15",
+                "Ár": {
+                    "Value": "218 440 Ft",
+                    "Point": 0.508
+                },
+                "Maximális videófelbontás": {
+                    "Value": "1080p (1920x1080) Full HD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "60 FPS",
+                    "Point": 1.0
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Elülső + belső + hátsó",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "160-180°",
+                    "Point": 0.176
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Igen, beépített",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen, letilthatók",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "angol",
+                    "Point": 0.5
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "1 perc",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "FCC, IC, CE, UKCA, RCM, Telec, WEEE, RoHS",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD, 64/128/256/512gb, Class 10",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": 3,
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-20°C – 70°C (-4°F – 158°F )",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "2 éves gyártó",
+                    "Point": 0.8
+                }
+            },
+            {
+                "Termék neve": "Blackvue DR770x-Box-Pro 3-csatornás elülső, belső és hátsó",
+                "sku": "Bl16",
+                "Ár": {
+                    "Value": "181 540 Ft",
+                    "Point": 0.609
+                },
+                "Maximális videófelbontás": {
+                    "Value": "1080p (1920x1080) Full HD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "60 FPS",
+                    "Point": 1.0
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Elülső + belső + hátsó",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "160-180°",
+                    "Point": 0.176
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Igen, beépített",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen, letilthatók",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "angol",
+                    "Point": 0.5
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "1 perc",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "FCC, IC, CE, UKCA, RCM, Telec, WEEE, RoHS",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD, 64/128/256/512gb, Class 10",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": 3,
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-20°C – 70°C (-4°F – 158°F )",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "2 éves gyártó",
+                    "Point": 0.8
+                }
+            },
+            {
+                "Termék neve": "Blackvue DR770x-2CH-Truck-LTE-Dual Lens Dash Cam/ külső hátsó kamera és beépített 4G-LTE",
+                "sku": "Bl17",
+                "Ár": {
+                    "Value": "222 680 Ft",
+                    "Point": 0.496
+                },
+                "Maximális videófelbontás": {
+                    "Value": "1080p (1920x1080) Full HD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "60 FPS",
+                    "Point": 1.0
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Elülső hátul",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "120-139°",
+                    "Point": 0.0
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Igen, beépített",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen, letilthatók",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "angol",
+                    "Point": 0.5
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Nem",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "1 perc",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "FCC, ISED, CE, UKCA, RCM, Telec, RoHS, WEEE, KC",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD, 64/128/256gb, Class 10",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": 2,
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-20℃ – 70℃ (-4°F – 158°F)",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "2 éves gyártó",
+                    "Point": 0.8
+                }
+            },
+            {
+                "Termék neve": "Blackvue DR770x-2CH-LTE kettős lencse beépített 4G-LTE-vel az elülső/hátsó vagy az elülső/belső térhez",
+                "sku": "Bl18",
+                "Ár": {
+                    "Value": "162 450 Ft",
+                    "Point": 0.662
+                },
+                "Maximális videófelbontás": {
+                    "Value": "1080p (1920x1080) Full HD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "60 FPS",
+                    "Point": 1.0
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Elülső hátul",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "120-139°",
+                    "Point": 0.0
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Igen, beépített",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen, letilthatók",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "angol",
+                    "Point": 0.5
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Auto",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "1 perc",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "FCC, ISED, CE, UKCA, RCM, Telec, RoHS, WEEE, KC",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD, 64/128/256gb, Class 10",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": 2,
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-20 °C − 70 °C (-4 °F − 158 °F)",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "2 éves gyártó",
+                    "Point": 0.8
+                }
+            },
+            {
+                "Termék neve": "Thinkware Q1000 2K QHD kettős lencse dashcam az első + hátsó felvételhez",
+                "sku": "Th19",
+                "Ár": {
+                    "Value": "106 040 Ft",
+                    "Point": 0.817
+                },
+                "Maximális videófelbontás": {
+                    "Value": "2K (2560x1440) QHD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "60 FPS",
+                    "Point": 1.0
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Elülső hátul",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "140-159°",
+                    "Point": 0.087
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Igen, beépített",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "Angol/spanyol/kínai/orosz",
+                    "Point": 0.7
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "Nem",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "FCC",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD, 32/64/128/256gb, Class 10",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": 2,
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-10° C − 60° C (14° F − 140° F)",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "1 éves gyártó",
+                    "Point": 0.5
+                }
+            },
+            {
+                "Termék neve": "Blackvue DR770x-2CH-Truck felhő-kész kettős lencse GPS WiFi Dash Cam/ külső hátsó kamera",
+                "sku": "Bl20",
+                "Ár": {
+                    "Value": "176 870 Ft",
+                    "Point": 0.622
+                },
+                "Maximális videófelbontás": {
+                    "Value": "1080p (1920x1080) Full HD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "60 FPS",
+                    "Point": 1.0
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Elülső hátul",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "120-139°",
+                    "Point": 0.0
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Igen, beépített",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen, letilthatók",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "angol",
+                    "Point": 0.5
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Nem",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "1 perc",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "FCC, CE, TELEC, RoHS, KCC, WEEE",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD 64/128/256gb, Class 10",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": 2,
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-20° C – 60° C (-4° F – 140° F)",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "2 éves gyártó",
+                    "Point": 0.8
+                }
+            },
+            {
+                "Termék neve": "Thinkware Q1000 2K QHD Single Lens Dashcam előre néző felvételhez",
+                "sku": "Th21",
+                "Ár": {
+                    "Value": "106 040 Ft",
+                    "Point": 0.817
+                },
+                "Maximális videófelbontás": {
+                    "Value": "2K (2560x1440) QHD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "60 FPS",
+                    "Point": 1.0
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Csak elöl",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "140-159°",
+                    "Point": 0.087
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Igen, beépített",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "angol",
+                    "Point": 0.5
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "FCC",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD, 32/64/128/256gb, Class 10",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": 1,
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-10° C − 60° C (14° F − 140° F)",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "1 éves gyártó",
+                    "Point": 0.5
+                }
+            },
+            {
+                "Termék neve": "Blackvue DR770x-2CH kettős lencse GPS WiFi Cloud Capable Dash Cam az elülső/hátsó vagy az elülső/belső térhez",
+                "sku": "Bl22",
+                "Ár": {
+                    "Value": "137 000 Ft",
+                    "Point": 0.732
+                },
+                "Maximális videófelbontás": {
+                    "Value": "1080p (1920x1080) Full HD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "60 FPS",
+                    "Point": 1.0
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Elülső hátul",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "120-139°",
+                    "Point": 0.0
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Igen, beépített",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen, letilthatók",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "angol",
+                    "Point": 0.5
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Auto",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "1 perc",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "FCC, CE, TELEC, RoHS, KCC, WEEE",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD, 64/128/256gb, Class 10",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": 2,
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-20° C – 60° C (-4° F – 140° F)",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "2 éves gyártó",
+                    "Point": 0.8
+                }
+            },
+            {
+                "Termék neve": "Blackvue DR770x-1CH egy lencse felhő-kész 1080p 60 fps GPS & WiFi Dash Cam",
+                "sku": "Bl23",
+                "Ár": {
+                    "Value": "97 550 Ft",
+                    "Point": 0.84
+                },
+                "Maximális videófelbontás": {
+                    "Value": "1080p (1920x1080) Full HD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "60 FPS",
+                    "Point": 1.0
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Csak elöl",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "120-139°",
+                    "Point": 0.0
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Igen, beépített",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen, letilthatók",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "angol",
+                    "Point": 0.5
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "1 perc",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "FCC, CE, TELEC, RoHS, KCC, WEEE",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD, 64/128/256gb, Class 10",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": "1-2",
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-20° C – 60° C (-4° F – 140° F)",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "2 éves gyártó",
+                    "Point": 0.8
+                }
+            },
+            {
+                "Termék neve": "Thinkware U1000 2CH plusz 4K elülső + HD hátsó",
+                "sku": "Th26",
+                "Ár": {
+                    "Value": "169 660 Ft",
+                    "Point": 0.642
+                },
+                "Maximális videófelbontás": {
+                    "Value": "4K (3840x2160) UHD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "60 FPS",
+                    "Point": 1.0
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Elülső hátul",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "120-139°",
+                    "Point": 0.0
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Igen, beépített",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen, letilthatók",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "Angol/spanyol/kínai/orosz/több",
+                    "Point": 0.8
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "Nem",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD, 64/128/256gb, Class 10",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": 2,
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-10° C − 60° C (14° F − 140° F)",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "2 éves gyártó",
+                    "Point": 0.8
+                }
+            },
+            {
+                "Termék neve": "Blackvue DR970x-2CH-LTE-Plus Dual Lencs 4K GPS WiFi Dash Cam/ beépített 4G-LTE az elülső/ hátsó részhez",
+                "sku": "Bl27",
+                "Ár": {
+                    "Value": "194 690 Ft",
+                    "Point": 0.573
+                },
+                "Maximális videófelbontás": {
+                    "Value": "4K (3840x2160) UHD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "30 FPS",
+                    "Point": 0.333
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Elülső hátul",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "120-139°",
+                    "Point": 0.0
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Igen, beépített",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen, letilthatók",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "angol",
+                    "Point": 0.5
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Auto",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "1 perc",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "FCC, ISED, CE, UKCA, RCM, Telec, RoHS, WEEE, KC",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD, 64/128/256/512gb, Class 10",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": 2,
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "20 °C − 70 °C (-4 °F − 158 °F)",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "2 éves gyártó",
+                    "Point": 0.8
+                }
+            },
+            {
+                "Termék neve": "A Thinkware U1000 plusz 4K egyszemélyes lencse dashcam az előre néző felvételhez",
+                "sku": "A28",
+                "Ár": {
+                    "Value": "127 240 Ft",
+                    "Point": 0.759
+                },
+                "Maximális videófelbontás": {
+                    "Value": "4K (3840x2160) UHD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "60 FPS",
+                    "Point": 1.0
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Csak elöl",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "120-139°",
+                    "Point": 0.0
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Igen, beépített",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen, letilthatók",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "Angol/spanyol/kínai/orosz/több",
+                    "Point": 0.8
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "Nem",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD, 64/128/256gb, Class 10",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": 1,
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-10° C − 60° C (14° F − 140° F)",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "2 éves gyártó",
+                    "Point": 0.8
+                }
+            },
+            {
+                "Termék neve": "DR970x-2CH-IR-Plus Dual Lencse 4K GPS WiFi felhő-képes elülső/belső",
+                "sku": "DR29",
+                "Ár": {
+                    "Value": "201 050 Ft",
+                    "Point": 0.556
+                },
+                "Maximális videófelbontás": {
+                    "Value": "4K (3840x2160) UHD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "30 FPS",
+                    "Point": 0.333
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Elülső + belső",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "140-159°",
+                    "Point": 0.087
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Igen, beépített",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen, letilthatók",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "angol",
+                    "Point": 0.5
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "1 perc",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "FCC, CE, TELEC, RoHS, KCC, WEEE",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD, 64/128/256/512gb, Class 10",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": 2,
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-20° C − 70° C (-4° F − 158° F)",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "2 éves gyártó",
+                    "Point": 0.8
+                }
+            },
+            {
+                "Termék neve": "Gondolkodásmód U3000 4K elülső + hátsó dashcam beépített parkoló radarral",
+                "sku": "Go30",
+                "Ár": {
+                    "Value": "203 590 Ft",
+                    "Point": 0.549
+                },
+                "Maximális videófelbontás": {
+                    "Value": "4K (3840x2160) UHD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "60 FPS",
+                    "Point": 1.0
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Elülső hátul",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "140-159°",
+                    "Point": 0.087
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Igen, beépített",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "angol",
+                    "Point": 0.5
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "FCC",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD, 64/128/256gb, Class 10",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": 2,
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-10° C − 60° C (14° F − 140° F)",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "1 éves gyártó",
+                    "Point": 0.5
+                }
+            },
+            {
+                "Termék neve": "VANTRUE E360 Dash Cam Quick-Start készlet a Rideshare-hez",
+                "sku": "VA31",
+                "Ár": {
+                    "Value": "186 620 Ft",
+                    "Point": 0.595
+                },
+                "Maximális videófelbontás": {
+                    "Value": "2K (2560x1440) QHD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "60 FPS",
+                    "Point": 1.0
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Elülső + belső",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "140-159°",
+                    "Point": 0.087
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Igen, beépített",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "Angol/spanyol/kínai/orosz",
+                    "Point": 0.7
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "Nem",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "FCC",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD, 32/64/128/256gb, Class 10",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": 2,
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-10° C − 60° C (14° F − 140° F)",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "1 éves gyártó",
+                    "Point": 0.5
+                }
+            },
+            {
+                "Termék neve": "Garmin Quick Start Dash Cam Bundle",
+                "sku": "Ga32",
+                "Ár": {
+                    "Value": "80 590 Ft",
+                    "Point": 0.887
+                },
+                "Maximális videófelbontás": {
+                    "Value": "1080p (1920x1080) Full HD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "30 FPS",
+                    "Point": 0.333
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Csak elöl",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "140-159°",
+                    "Point": 0.087
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Igen, beépített",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "angol",
+                    "Point": 0.5
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "Nem",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "FCC, CE",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD, 8/16/32/64/128/256/512gb, Class 10",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": 1,
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-20° C − 55° C (-4° F − 141° F)",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "1 éves gyártó",
+                    "Point": 0.5
+                }
+            },
+            {
+                "Termék neve": "VANTRUE elem 3 (E3) Kompakt 3-csatornás kötőbütemény az elülső, a belső és a hátsó felvételhez",
+                "sku": "VA34",
+                "Ár": {
+                    "Value": "127 240 Ft",
+                    "Point": 0.759
+                },
+                "Maximális videófelbontás": {
+                    "Value": "2.7K (2592x1944) QHD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "30 FPS",
+                    "Point": 0.333
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Elülső + belső + hátsó",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "360°",
+                    "Point": 1.0
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Opcionális, beleértve",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "angol",
+                    "Point": 0.5
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "FCC",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD, 32/64/128/256gb, Class 10",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": 3,
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-20° C - 70° C (4° F - 158° F)",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "1 éves gyártó",
+                    "Point": 0.5
+                }
+            },
+            {
+                "Termék neve": "VanTrue Nexus 5 (N5) 4-csatornás hangvezérelt intelligens",
+                "sku": "Va35",
+                "Ár": {
+                    "Value": "169 660 Ft",
+                    "Point": 0.642
+                },
+                "Maximális videófelbontás": {
+                    "Value": "2.7K (2592x1944) QHD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "30 FPS",
+                    "Point": 0.333
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Elülső + belső + hátsó",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "360°",
+                    "Point": 1.0
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Igen, beépített",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "angol",
+                    "Point": 0.5
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "FCC",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD, 32/64/128/256/512gb, Class 10",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": 4,
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-20° C - 60° C (4° F - 140° F)",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "1 éves gyártó",
+                    "Point": 0.5
+                }
+            },
+            {
+                "Termék neve": "VANTRUE Nexus 4 Pro (N4 Pro) 3-csatornás 4K Advanced Dashcam",
+                "sku": "VA36",
+                "Ár": {
+                    "Value": "161 180 Ft",
+                    "Point": 0.665
+                },
+                "Maximális videófelbontás": {
+                    "Value": "4K (3840x2160) UHD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "30 FPS",
+                    "Point": 0.333
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Elülső + belső + hátsó",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "160-180°",
+                    "Point": 0.176
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Igen, beépített",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "angol",
+                    "Point": 0.5
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "FCC",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD, 32/64/128/256/512gb, Class 10",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": 3,
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-20° C - 65° C (4° F - 149° F)",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "1 éves gyártó",
+                    "Point": 0.5
+                }
+            },
+            {
+                "Termék neve": "VIOFO A119 MINI 2 |Extra kicsi 2K Dash Cam/ GPS & WiFi",
+                "sku": "VI37",
+                "Ár": {
+                    "Value": "63 620 Ft",
+                    "Point": 0.934
+                },
+                "Maximális videófelbontás": {
+                    "Value": "2K (2560x1440) QHD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "60 FPS",
+                    "Point": 1.0
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Csak elöl",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "140-159°",
+                    "Point": 0.087
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Igen, beépített",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "Angol, orosz, kínai",
+                    "Point": 0.5
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Auto",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "1/2/3/5/10 perc",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "CE",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD, 32/64/128/256/512gb, Class 10",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": 1,
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "1 éves gyártó",
+                    "Point": 0.5
+                }
+            },
+            {
+                "Termék neve": "VIOFO WM1 |2K Quad HD Mini Dashcam Wi-Fi-vel és GPS-vel",
+                "sku": "VI38",
+                "Ár": {
+                    "Value": "42 410 Ft",
+                    "Point": 0.992
+                },
+                "Maximális videófelbontás": {
+                    "Value": "2K (2560x1440) QHD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "30 FPS",
+                    "Point": 0.333
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Csak elöl",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "120-139°",
+                    "Point": 0.0
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Igen, beépített",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "",
+                    "Point": 0.5
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Auto",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "1/3/5/10 perc",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "FCC, IC",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD, 32/64/128/256gb, Class 10",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": 1,
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-10° C − 65° C (14° F − 149° F)",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "1 éves gyártó",
+                    "Point": 0.5
+                }
+            },
+            {
+                "Termék neve": "Viofo vs1 |Mini 2K Smart Dash Cam w/ GPS & WiFi",
+                "sku": "Vi39",
+                "Ár": {
+                    "Value": "63 620 Ft",
+                    "Point": 0.934
+                },
+                "Maximális videófelbontás": {
+                    "Value": "2K (2560x1440) QHD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "30 FPS",
+                    "Point": 0.333
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Csak elöl",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "140-159°",
+                    "Point": 0.087
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Igen, beépített",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "angol",
+                    "Point": 0.5
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Auto",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD, 32/64/128/256/512gb, Class 10",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": 1,
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-20° C − 65° C (-4° F − 149° F)",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "1 éves gyártó",
+                    "Point": 0.5
+                }
+            },
+            {
+                "Termék neve": "Garmin RVCAM 795 |RV GPS navigátor beépített előre néző",
+                "sku": "Ga40",
+                "Ár": {
+                    "Value": "254 490 Ft",
+                    "Point": 0.409
+                },
+                "Maximális videófelbontás": {
+                    "Value": "1080p (1920x1080) Full HD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "30 FPS",
+                    "Point": 0.333
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Csak elöl",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "140-159°",
+                    "Point": 0.087
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Igen, beépített",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "angol",
+                    "Point": 0.5
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "FCC",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD, 16/32/64/128/256",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": 1,
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-20° to 55°C (from -4° to 131°F)",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "1 éves gyártó",
+                    "Point": 0.5
+                }
+            },
+            {
+                "Termék neve": "Garmin Dēzlcam 725 |7 \"GPS teherautó navigátor beépített előre néző",
+                "sku": "Ga41",
+                "Ár": {
+                    "Value": "254 490 Ft",
+                    "Point": 0.409
+                },
+                "Maximális videófelbontás": {
+                    "Value": "1080p (1920x1080) Full HD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "30 FPS",
+                    "Point": 0.333
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Csak elöl",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "140-159°",
+                    "Point": 0.087
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Igen, beépített",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "angol",
+                    "Point": 0.5
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "FCC",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD, 16/32/64/128/256",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": 1,
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-20° to 55°C (from -4° to 131°F)",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "1 éves gyártó",
+                    "Point": 0.5
+                }
+            },
+            {
+                "Termék neve": "Garmin Drivecam 76 |GPS navigátor beépített előre néző",
+                "sku": "Ga42",
+                "Ár": {
+                    "Value": "190 870 Ft",
+                    "Point": 0.584
+                },
+                "Maximális videófelbontás": {
+                    "Value": "1080p (1920x1080) Full HD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "30 FPS",
+                    "Point": 0.333
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Csak elöl",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "140-159°",
+                    "Point": 0.087
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Igen, beépített",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "angol",
+                    "Point": 0.5
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "FCC",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD, 16/32/64/128/256",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": 1,
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-20° to 55°C (from -4° to 131°F)",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "1 éves gyártó",
+                    "Point": 0.5
+                }
+            },
+            {
+                "Termék neve": "Garmin BC50 vezeték nélküli tartalék kamera",
+                "sku": "Ga43",
+                "Ár": {
+                    "Value": "84 830 Ft",
+                    "Point": 0.875
+                },
+                "Maximális videófelbontás": {
+                    "Value": "720p (1280x720) HD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "",
+                    "Point": 0.5
+                },
+                "Tervezett lefedettség": {
+                    "Value": "",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "160-180°",
+                    "Point": 0.176
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Nem",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Nem",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "angol",
+                    "Point": 0.5
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Auto",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "FCC",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": "",
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-20° to 60°C (from -4° to 140°F)",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "1 éves gyártó",
+                    "Point": 0.5
+                }
+            },
+            {
+                "Termék neve": "Thinkware U1000 Plus Ultimate Dash Cam Diy Bundle az első + hátsó felvételi és parkolási módhoz",
+                "sku": "Th44",
+                "Ár": {
+                    "Value": "218 440 Ft",
+                    "Point": 0.508
+                },
+                "Maximális videófelbontás": {
+                    "Value": "4K (3840x2160) UHD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "60 FPS",
+                    "Point": 1.0
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Elülső hátul",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "140-159°",
+                    "Point": 0.087
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Igen, beépített",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen, letilthatók",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "Angol/spanyol/kínai/orosz",
+                    "Point": 0.7
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "Nem",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "FCC, CE, RoHS",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD, 32/64/128gb, Class 10",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": 2,
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-10° C − 60° C (14° F − 140° F)",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "1 éves gyártó",
+                    "Point": 0.5
+                }
+            },
+            {
+                "Termék neve": "Thinkware U3000 elülső + hátsó dashcam köteg ivolt xtra -val",
+                "sku": "Th45",
+                "Ár": {
+                    "Value": "402 950 Ft",
+                    "Point": 0.0
+                },
+                "Maximális videófelbontás": {
+                    "Value": "4K (3840x2160) UHD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "60 FPS",
+                    "Point": 1.0
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Elülső hátul",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "140-159°",
+                    "Point": 0.087
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Igen, beépített",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "angol",
+                    "Point": 0.5
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "FCC",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD, 64/128/256gb, Class 10",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": 2,
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-10° C − 60° C (14° F − 140° F)",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "1 éves gyártó",
+                    "Point": 0.5
+                }
+            },
+            {
+                "Termék neve": "Viofo A229 Pro Duo |4K elülső + 2K Hátsó intelligens és wifi",
+                "sku": "Vi46",
+                "Ár": {
+                    "Value": "152 690 Ft",
+                    "Point": 0.689
+                },
+                "Maximális videófelbontás": {
+                    "Value": "4K (3840x2160) UHD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "30 FPS",
+                    "Point": 0.333
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Elülső hátul",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "140-159°",
+                    "Point": 0.087
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Igen, beépített",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "angol",
+                    "Point": 0.5
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Auto",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "1/3/5/10 perc",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "FCC",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD, 32/64/128/256/512gb, Class 10",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": 2,
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-10° C − 65° C (14° F − 149° F)",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "1 éves gyártó",
+                    "Point": 0.5
+                }
+            },
+            {
+                "Termék neve": "VIOFO A329-2CH |4K elülső + 2K hátsó HDR & wifi-6",
+                "sku": "VI47",
+                "Ár": {
+                    "Value": "199 350 Ft",
+                    "Point": 0.56
+                },
+                "Maximális videófelbontás": {
+                    "Value": "4K (3840x2160) UHD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "60 FPS",
+                    "Point": 1.0
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Elülső hátul",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "140-159°",
+                    "Point": 0.087
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Igen, beépített",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "angol",
+                    "Point": 0.5
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Auto",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "1/2/3/5/10 perc",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "CE",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD, 32/64/128/256/512gb, Class 10",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": 2,
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-20° C − 65° C (-4° F − 149° F)",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "1 éves gyártó",
+                    "Point": 0.5
+                }
+            },
+            {
+                "Termék neve": "Garmin Dash CAM X310 |Compact 4K W/ hangvezérlés, GPS és WiFi",
+                "sku": "Ga48",
+                "Ár": {
+                    "Value": "156 940 Ft",
+                    "Point": 0.677
+                },
+                "Maximális videófelbontás": {
+                    "Value": "4K (3840x2160) UHD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "60 FPS",
+                    "Point": 1.0
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Csak elöl",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "140-159°",
+                    "Point": 0.087
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Igen, beépített",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen, letilthatók",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "angol",
+                    "Point": 0.5
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "FCC, CE",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD, 8/16/32/64/128/256/512gb, Class 10",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": 1,
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-20° C − 55° C (-4° F − 141° F)",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "1 éves gyártó",
+                    "Point": 0.5
+                }
+            },
+            {
+                "Termék neve": "VIOFO A139 Pro 3CH Bundle |4K elülső, belső és hátsó gps & wifi",
+                "sku": "VI33",
+                "Ár": {
+                    "Value": "165 420 Ft",
+                    "Point": 0.654
+                },
+                "Maximális videófelbontás": {
+                    "Value": "4K (3840x2160) UHD",
+                    "Point": 0.5
+                },
+                "Maximális képkockasebesség": {
+                    "Value": "30 FPS",
+                    "Point": 0.333
+                },
+                "Tervezett lefedettség": {
+                    "Value": "Elülső + belső + hátsó",
+                    "Point": 0.5
+                },
+                "Látószög (fokban)": {
+                    "Value": "160-180°",
+                    "Point": 0.176
+                },
+                "GPS pozíció naplózás": {
+                    "Value": "Igen, beépített",
+                    "Point": 0.5
+                },
+                "Hangfelvétel": {
+                    "Value": "Igen",
+                    "Point": 0.5
+                },
+                "Nyelvek": {
+                    "Value": "angol",
+                    "Point": 0.5
+                },
+                "Nappali/éjszakai mód": {
+                    "Value": "Auto",
+                    "Point": 0.5
+                },
+                "Videórészlet kiválasztása": {
+                    "Value": "1/3/5/10 perc",
+                    "Point": 0.5
+                },
+                "Tanúsítvány": {
+                    "Value": "",
+                    "Point": 0.5
+                },
+                "Memóriakártya típusa": {
+                    "Value": "MicroSD, 128gb, Class 10",
+                    "Point": 0.5
+                },
+                "Objektívek száma": {
+                    "Value": 3,
+                    "Point": 0.5
+                },
+                "Működési hőmérséklet": {
+                    "Value": "-10° C − 65° C (14° F − 149° F)",
+                    "Point": 0.5
+                },
+                "Garancia": {
+                    "Value": "1 éves gyártó",
+                    "Point": 0.5
+                }
+            }
+        ];
+
+        let availableIds = []; // Keep track of available IDs (including deleted ones)
+        let highestId = 2; // Start with 2 as we have products 1 and 2 by default
+
+        // Helper function to reset colors and point displays
+        function resetComparison() {
+            // Clear all highlights
+            document.querySelectorAll('.better-value, .tied-value').forEach(cell => {
+                cell.classList.remove('better-value', 'tied-value');
+            });
+
+            // Reset all point displays
+            document.querySelectorAll('[id$="-total-points"]').forEach(cell => {
+                cell.textContent = "-";
+            });
+        }
+
+        // Get the next available product ID
+        function getNextAvailableId() {
+            if (availableIds.length > 0) {
+                return availableIds.shift(); // Take the first available ID
+            } else {
+                return ++highestId; // No available IDs, create a new one
+            }
+        }
+
+        // Get all unique property names except "sku"
+        function getPropertyNames() {
+            const properties = new Set();
+            productData.forEach(product => {
+                Object.keys(product).forEach(key => {
+                    if (key !== "sku") {
+                        properties.add(key);
+                    }
+                });
+            });
+            // Make sure "Termék neve" is first
+            const propArray = Array.from(properties);
+            propArray.sort((a, b) => {
+                if (a === "Termék neve") return -1;
+                if (b === "Termék neve") return 1;
+                return a.localeCompare(b);
+            });
+            return propArray;
+        }
+
+        // Initialize the table with all property rows
+        function initializeTable() {
+            const tableBody = document.querySelector('#comparison-table tbody');
+            const propertyNames = getPropertyNames();
+
+            // Skip "Termék neve" as it's already in the dropdown
+            for (let i = 0; i < propertyNames.length; i++) {
+                const prop = propertyNames[i];
+                if (prop === "Termék neve") continue; // Skip adding row for product name
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                        <td class="property-label">${prop}</td>
+                        <td id="product1-${prop.replace(/\s+/g, '-')}" data-product-id="1">-</td>
+                        <td id="product2-${prop.replace(/\s+/g, '-')}" data-product-id="2">-</td>
+                        <td></td>
+                    `;
+                tableBody.appendChild(row);
+            }
+
+            // Add event listener for the add product button
+            document.getElementById('add-product-btn').addEventListener('click', addProductColumn);
+        }
+
+        // Add a new product column
+        function addProductColumn() {
+            const productId = getNextAvailableId(); // Get the next ID (reusing deleted ones if available)
+
+            // Add new header cell
+            const headerRow = document.getElementById('header-row');
+            const lastHeaderCell = headerRow.lastElementChild;
+            const newHeaderCell = document.createElement('th');
+            newHeaderCell.setAttribute('data-product-id', productId);
+
+            // Use "Termék X" format
+            newHeaderCell.textContent = `Termék ${productId} `;
+
+            const removeButton = document.createElement('button');
+            removeButton.className = 'remove-column-btn';
+            removeButton.innerHTML = '&times;';
+            removeButton.title = 'Termék eltávolítása';
+            removeButton.addEventListener('click', function (e) {
+                e.stopPropagation(); // Prevent event bubbling
+                removeProductColumn(productId);
+            });
+
+            newHeaderCell.appendChild(removeButton);
+
+            // Insert before the + button cell
+            headerRow.insertBefore(newHeaderCell, lastHeaderCell);
+
+            // Add new dropdown
+            const dropdownRow = document.getElementById('dropdown-row');
+            const dropdownEmptyCell = dropdownRow.lastElementChild;
+            const newDropdownCell = document.createElement('td');
+            newDropdownCell.setAttribute('data-product-id', productId);
+            newDropdownCell.innerHTML = `
+                    <select id="product${productId}" onchange="updateComparison(${productId})">
+                        <option value="">Válassz terméket...</option>
+                    </select>
+                `;
+            dropdownRow.insertBefore(newDropdownCell, dropdownEmptyCell);
+
+            // Add new points cell
+            const pointsRow = document.getElementById('points-row');
+            const pointsEmptyCell = pointsRow.lastElementChild;
+            const newPointsCell = document.createElement('td');
+            newPointsCell.id = `product${productId}-total-points`;
+            newPointsCell.setAttribute('data-product-id', productId);
+            newPointsCell.textContent = '-';
+            pointsRow.insertBefore(newPointsCell, pointsEmptyCell);
+
+            // Add new cell to each property row
+            const tableRows = document.querySelectorAll('#comparison-table tbody tr');
+            tableRows.forEach(row => {
+                // Skip dropdown and points rows as we've already handled them
+                if (row.id === 'dropdown-row' || row.id === 'points-row') return;
+
+                const propName = row.querySelector('.property-label').textContent;
+                const emptyCell = row.lastElementChild;
+                const newCell = document.createElement('td');
+                newCell.id = `product${productId}-${propName.replace(/\s+/g, '-')}`;
+                newCell.setAttribute('data-product-id', productId);
+                newCell.textContent = '-';
+                row.insertBefore(newCell, emptyCell);
+            });
+
+            // Populate the new dropdown
+            populateDropdown(productId);
+
+            // Reset colors and comparisons when adding a new product
+            resetComparison();
+        }
+
+        // Remove a product column
+        function removeProductColumn(productId) {
+            // Add the ID back to available IDs for reuse
+            availableIds.push(parseInt(productId));
+            availableIds.sort((a, b) => a - b); // Keep them sorted for sequential reuse
+
+            // Find and remove all cells with this product ID
+            document.querySelectorAll(`[data-product-id="${productId}"]`).forEach(element => {
+                if (element && element.parentNode) {
+                    element.parentNode.removeChild(element);
+                }
+            });
+
+            // Reset and recalculate
+            resetComparison();
+            compareProducts();
+        }
+
+        // Populate a dropdown with products
+        function populateDropdown(productId) {
+            const dropdown = document.getElementById(`product${productId}`);
+            if (!dropdown) return;
+
+            // Add products to dropdown
+            productData.forEach(product => {
+                const option = document.createElement('option');
+                option.value = product["Termék neve"];
+                option.textContent = product["Termék neve"];
+                dropdown.appendChild(option);
+            });
+        }
+
+        // Initialize the application when the document is loaded
+        document.addEventListener('DOMContentLoaded', function () {
+            // Initialize the table with all property rows
+            initializeTable();
+
+            // Populate initial dropdowns
+            populateDropdown(1);
+            populateDropdown(2);
+        });
+
+        // Get all product IDs currently in the table
+        function getAllProductIds() {
+            const ids = new Set();
+            document.querySelectorAll('[data-product-id]').forEach(element => {
+                ids.add(parseInt(element.getAttribute('data-product-id')));
+            });
+            return Array.from(ids);
+        }
+
+        // Compare all products and update table
+        function compareProducts() {
+            // Reset all highlights first
+            resetComparison();
+
+            // Get all selected products
+            const selectedProducts = [];
+            const productIds = getAllProductIds();
+
+            productIds.forEach(productId => {
+                const productElement = document.getElementById(`product${productId}`);
+                if (!productElement) return;
+
+                const productName = productElement.value;
+                if (productName) {
+                    const product = productData.find(p => p["Termék neve"] === productName);
+                    if (product) {
+                        selectedProducts.push({
+                            id: productId,
+                            product: product,
+                            totalPoints: 0
+                        });
+                    }
+                }
+            });
+
+            if (selectedProducts.length < 2) return; // Need at least 2 products to compare
+
+            const propertyNames = getPropertyNames();
+
+            // Calculate total points for each product
+            propertyNames.forEach(prop => {
+                if (prop === "Termék neve") return;
+
+                // Find max points for this property among selected products and count how many products have it
+                let maxPoints = 0;
+                let maxPointsCount = 0;
+                const pointsMap = new Map(); // To track points of each product
+
+                // First pass: find max points
+                selectedProducts.forEach(selected => {
+                    if (selected.product[prop]) {
+                        let points = 0;
+                        if (typeof selected.product[prop] === 'object' && selected.product[prop].Point !== undefined) {
+                            points = selected.product[prop].Point;
+                            selected.totalPoints += points;
+                        }
+
+                        pointsMap.set(selected.id, points);
+
+                        if (points > maxPoints) {
+                            maxPoints = points;
+                            maxPointsCount = 1;
+                        } else if (points === maxPoints) {
+                            maxPointsCount++;
+                        }
+                    }
+                });
+
+                // Second pass: highlight based on whether there's a tie or clear winner
+                if (maxPoints > 0) {
+                    const isTie = maxPointsCount > 1; // If more than one product has the max points
+
+                    selectedProducts.forEach(selected => {
+                        const points = pointsMap.get(selected.id) || 0;
+                        if (points === maxPoints) {
+                            const cell = document.getElementById(`product${selected.id}-${prop.replace(/\s+/g, '-')}`);
+                            if (cell) {
+                                // Use tied-value class for ties, better-value for clear winners
+                                cell.classList.add(isTie ? 'tied-value' : 'better-value');
+                            }
+                        }
+                    });
+                }
+            });
+
+            // Update total points for each product
+            selectedProducts.forEach(selected => {
+                const pointsCell = document.getElementById(`product${selected.id}-total-points`);
+                if (pointsCell) {
+                    pointsCell.textContent = selected.totalPoints.toFixed(1) + ' pont';
+                }
+            });
+
+            // Find highest total score and count how many products have it
+            let maxTotalPoints = 0;
+            let maxTotalPointsCount = 0;
+
+            selectedProducts.forEach(selected => {
+                if (selected.totalPoints > maxTotalPoints) {
+                    maxTotalPoints = selected.totalPoints;
+                    maxTotalPointsCount = 1;
+                } else if (selected.totalPoints === maxTotalPoints) {
+                    maxTotalPointsCount++;
+                }
+            });
+
+            // Highlight total score - use tied-value for ties
+            const isTotalTie = maxTotalPointsCount > 1;
+            selectedProducts.forEach(selected => {
+                if (selected.totalPoints === maxTotalPoints) {
+                    const pointsCell = document.getElementById(`product${selected.id}-total-points`);
+                    if (pointsCell) {
+                        pointsCell.classList.add(isTotalTie ? 'tied-value' : 'better-value');
+                    }
+                }
+            });
+        }
+
+        // Update comparison when a product is selected
+        function updateComparison(productId) {
+            // Reset all colors first
+            resetComparison();
+
+            const selectedProduct = document.getElementById(`product${productId}`).value;
+            const propertyNames = getPropertyNames();
+
+            propertyNames.forEach(prop => {
+                if (prop === "Termék neve") return; // Skip product name
+
+                const cellId = `product${productId}-${prop.replace(/\s+/g, '-')}`;
+                const cell = document.getElementById(cellId);
+
+                if (!cell) return; // Skip if cell doesn't exist
+
+                if (selectedProduct) {
+                    const product = productData.find(p => p["Termék neve"] === selectedProduct);
+
+                    if (product && product[prop]) {
+                        // Check if property is an object with Value
+                        if (typeof product[prop] === 'object' && product[prop].Value !== undefined) {
+                            cell.textContent = product[prop].Value;
+                        } else {
+                            cell.textContent = product[prop];
+                        }
+                    } else {
+                        cell.textContent = "-";
+                    }
+                } else {
+                    cell.textContent = "-";
+                    const pointsCell = document.getElementById(`product${productId}-total-points`);
+                    if (pointsCell) {
+                        pointsCell.textContent = "-";
+                    }
+                }
+            });
+
+            // Update comparisons
+            compareProducts();
+        }
+    </script>
+</body>
+</html>           
