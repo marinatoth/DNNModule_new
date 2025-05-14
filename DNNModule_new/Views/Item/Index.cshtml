@@ -44,7 +44,7 @@
         }
 
         body {
-            padding: 2rem;
+            padding: 20px;
             background-color: #f5f5f5;
             color: #333;
         }
@@ -72,14 +72,14 @@
             table-layout: fixed; /* Ensure consistent column widths */
         }
 
-        .comparison-table th {
-            background-color: #3498db;
-            color: white;
-            text-align: left;
-            padding: 1rem;
-            font-weight: bold;
-            white-space: nowrap; /* Prevent header text from wrapping */
-        }
+            .comparison-table th {
+                background-color: #D0FFCE;
+                color: white;
+                text-align: left;
+                padding: 1rem;
+                font-weight: bold;
+                white-space: nowrap; /* Prevent header text from wrapping */
+            }
 
         .comparison-table th:first-child {
             width: 180px; /* Fixed width for property column */
@@ -113,11 +113,11 @@
             transition: border-color 0.3s;
         }
 
-        .dropdown-row select:focus {
-            outline: none;
-            border-color: #3498db;
-            box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
-        }
+            .dropdown-row select:focus {
+                outline: none;
+                border-color: #D0FFCE;
+                box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
+            }
 
         .property-label {
             font-weight: bold;
@@ -148,7 +148,7 @@
         }
 
         .add-product-btn {
-            background-color: #3498db;
+            background-color: #D0FFCE;
             color: white;
             border: none;
             border-radius: 50%;
@@ -163,9 +163,9 @@
             transition: background-color 0.2s;
         }
 
-        .add-product-btn:hover {
-            background-color: #2980b9;
-        }
+            .add-product-btn:hover {
+                background-color: #D0FFCE;
+            }
 
         .th-with-button {
             display: flex;
@@ -3348,6 +3348,63 @@
             }
         }
 
+
+        // Save the current state of the comparison
+        function saveComparisonState() {
+            const state = {
+                productColumns: getAllProductIds(),
+                selectedProducts: {}
+            };
+
+            // Save selected products
+            getAllProductIds().forEach(id => {
+                const dropdown = document.getElementById(`product${id}`);
+                if (dropdown) {
+                    state.selectedProducts[id] = dropdown.value;
+                }
+            });
+
+            localStorage.setItem('comparisonState', JSON.stringify(state));
+        }
+
+        // Load the saved comparison state
+        function loadComparisonState() {
+            const savedState = localStorage.getItem('comparisonState');
+            if (!savedState) return;
+
+            try {
+                const state = JSON.parse(savedState);
+
+                // Restore columns (if needed)
+                if (state.productColumns) {
+                    // We already have columns 1 and 2 by default
+                    const defaultColumns = [1, 2];
+
+                    // Add any additional columns
+                    state.productColumns.forEach(id => {
+                        if (!defaultColumns.includes(id)) {
+                            highestId = Math.max(highestId, id);
+                            addProductColumn(id);
+                        }
+                    });
+                }
+
+                // Restore selected products
+                if (state.selectedProducts) {
+                    Object.keys(state.selectedProducts).forEach(id => {
+                        const dropdown = document.getElementById(`product${id}`);
+                        if (dropdown && state.selectedProducts[id]) {
+                            dropdown.value = state.selectedProducts[id];
+                            updateComparison(parseInt(id));
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading comparison state:', error);
+            }
+        }
+
+
         // Get all unique property names except "sku"
         function getPropertyNames() {
             const properties = new Set();
@@ -3389,12 +3446,15 @@
             }
 
             // Add event listener for the add product button
-            document.getElementById('add-product-btn').addEventListener('click', addProductColumn);
+            document.getElementById('add-product-btn').addEventListener('click', function (e) {
+                e.preventDefault(); // Prevent page refresh
+                addProductColumn();
+            });
         }
 
         // Add a new product column
-        function addProductColumn() {
-            const productId = getNextAvailableId(); // Get the next ID (reusing deleted ones if available)
+        function addProductColumn(specificId) {
+            const productId = specificId || getNextAvailableId();
 
             // Add new header cell
             const headerRow = document.getElementById('header-row');
@@ -3460,6 +3520,7 @@
 
             // Reset colors and comparisons when adding a new product
             resetComparison();
+            saveComparisonState();
         }
 
         // Remove a product column
@@ -3473,11 +3534,15 @@
                 if (element && element.parentNode) {
                     element.parentNode.removeChild(element);
                 }
+
+                
             });
 
+            
             // Reset and recalculate
             resetComparison();
             compareProducts();
+            saveComparisonState();
         }
 
         // Populate a dropdown with products
@@ -3502,6 +3567,9 @@
             // Populate initial dropdowns
             populateDropdown(1);
             populateDropdown(2);
+
+            //Load any saved state
+            loadComparisonState();
         });
 
         // Get all product IDs currently in the table
@@ -3662,6 +3730,7 @@
 
             // Update comparisons
             compareProducts();
+            saveComparisonState();
         }
     </script>
 </body>
