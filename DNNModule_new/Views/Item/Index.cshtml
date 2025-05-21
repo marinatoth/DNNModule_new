@@ -1,4 +1,4 @@
-﻿@inherits DotNetNuke.Web.Mvc.Framework.DnnWebViewPage<IEnumerable<Compare.Dnn.DNNModule_new.Models.Item>>
+@inherits DotNetNuke.Web.Mvc.Framework.DnnWebViewPage<IEnumerable<Compare.Dnn.DNNModule_new.Models.Item>>
 
 @using System.Text.RegularExpressions
 @using DotNetNuke.Web.Mvc.Helpers
@@ -49,11 +49,13 @@
             color: #333;
         }
 
-        .container {
+        .containermodul {
             max-width: 1200px;
             margin: 0 auto;
-            overflow-x: auto; /* Enable horizontal scrolling if needed */
+            overflow-x: auto;
+            padding: 0 1rem; /* Add some padding */
         }
+
 
         h1 {
             text-align: center;
@@ -63,32 +65,66 @@
 
         .comparison-table {
             width: 100%;
-            border-collapse: collapse;
+            border-collapse: separate;
             margin-top: 2rem;
             background-color: white;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
             border-radius: 8px;
             overflow: hidden;
             table-layout: fixed; /* Ensure consistent column widths */
+            border-collapse: separate; /* Changed from collapse */
+            border-spacing: 0; /* Add spacing between cells */
         }
+
 
             .comparison-table th {
-                background-color: #D0FFCE;
+                background-color: #3498db;
                 color: white;
-                text-align: left;
-                padding: 1rem;
                 font-weight: bold;
                 white-space: nowrap; /* Prevent header text from wrapping */
+                min-width: 180px;
+                padding: 1rem;
+                word-break: break-word;
+                text-align: center; /* Center align headers */
             }
 
-        .comparison-table th:first-child {
-            width: 180px; /* Fixed width for property column */
+            .comparison-table td.property-label {
+                min-width: 160px;
+                max-width: 200px;
+                font-weight: bold;
+            }
+
+            .comparison-table th:first-child {
+                width: 180px; /* Fixed width for property column */
+            }
+
+            .comparison-table td {
+                padding: 0.8rem 1rem;
+                border-bottom: 1px solid #eee;
+                word-break: break-word;
+                min-width: 180px; /* Ensure minimum width for all cells */
+            }
+
+        #dropdown-row td {
+            padding: 0.8rem;
         }
 
-        .comparison-table td {
-            padding: 0.8rem 1rem;
-            border-bottom: 1px solid #eee;
-            word-break: break-word; /* Allow words to break if needed */
+            #dropdown-row td[data-product-id] {
+                padding: 1rem;
+                min-width: 220px;
+                max-width: 320px; /* Limit maximum width */
+            }
+
+        #dropdown-row select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background-color: white;
+            font-size: 1rem;
+            box-sizing: border-box;
+            margin: 0;
+            display: block;
         }
 
         .comparison-table tr:nth-child(even) {
@@ -99,25 +135,35 @@
             border-bottom: none;
         }
 
-        .dropdown-row td {
+        /* ----- JAVÍTÁS A LEGÖRDÜLŐ LISTÁKHOZ ----- */
+        .dropdown-row-m td {
             padding: 1rem;
+            /* Biztosítjuk, hogy a cellák ne csússzanak össze */
+            min-width: 220px; /* Minimális szélesség a celláknak */
         }
 
-        .dropdown-row select {
-            width: 100%;
+        .dropdown-row-m select {
+            width: 100%; /* Módosítva 90%-ról 100%-ra */
             padding: 12px;
             border: 1px solid #ddd;
             border-radius: 6px;
             background-color: white;
             font-size: 1rem;
             transition: border-color 0.3s;
+            /* A select mező maradjon a cellán belül */
+            max-width: 100%;
+            box-sizing: border-box;
+            /* Legyen közte távolság */
+            margin: 0 auto;
+            display: block;
         }
 
-            .dropdown-row select:focus {
+            .dropdown-row-m select:focus {
                 outline: none;
                 border-color: #D0FFCE;
                 box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
             }
+
 
         .property-label {
             font-weight: bold;
@@ -141,14 +187,14 @@
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
 
-        .points-row td {
-            font-size: 1.3rem;
-            padding: 1.2rem 1rem;
-            color: #2c3e50;
-        }
+            .points-row td {
+                font-size: 1.3rem;
+                padding: 1.2rem 1rem;
+                color: #2c3e50;
+            }
 
         .add-product-btn {
-            background-color: #D0FFCE;
+            background-color: #3498db;
             color: white;
             border: none;
             border-radius: 50%;
@@ -164,7 +210,7 @@
         }
 
             .add-product-btn:hover {
-                background-color: #D0FFCE;
+                background-color: #3498db;
             }
 
         .th-with-button {
@@ -189,26 +235,49 @@
             vertical-align: middle;
         }
 
-        .remove-column-btn:hover {
-            background-color: #c0392b;
+            .remove-column-btn:hover {
+                background-color: #c0392b;
+            }
+
+
+        .header-containermodul {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
         }
 
-        @*@media (max-width: 768px) {
-            .comparison-table {
-                font-size: 0.85rem;
+        .button-containermodul {
+            text-align: right;
+        }
+
+        .reset-btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+            .reset-btn:hover {
+                background-color: #3498db;
             }
 
-            .comparison-table th,
-            .comparison-table td {
-                padding: 0.5rem;
+            .reset-btn:active {
+                transform: scale(0.98);
             }
-        }*@
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="containermodul">
         <h1>Termék Összehasonlító</h1>
-
+        <div class="button-containermodul">
+            <button id="reset-comparison-btn" class="reset-btn" onclick="resetComparison()">Alaphelyzet</button>
+        </div>
         <table id="comparison-table" class="comparison-table">
             <thead>
                 <tr id="header-row">
@@ -258,11 +327,11 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "1080p (1920x1080) Full HD",
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Maximális képkockasebesség": {
                     "Value": "30 FPS",
-                    "Point": 0.333
+                    "Point": 0.5
                 },
                 "Tervezett lefedettség": {
                     "Value": "Legfeljebb 8 egyedi szög",
@@ -270,7 +339,7 @@
                 },
                 "Látószög (fokban)": {
                     "Value": "140-159°",
-                    "Point": 0.087
+                    "Point": 0.09
                 },
                 "GPS pozíció naplózás": {
                     "Value": "Opcionális, beleértve",
@@ -282,7 +351,7 @@
                 },
                 "Nyelvek": {
                     "Value": "Angol/spanyol/kínai/orosz",
-                    "Point": 0.5
+                    "Point": 0.333
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Igen",
@@ -293,8 +362,7 @@
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "FCC, CE, RoHS",
-                    "Point": 0.5
+                    "Value": "FCC, CE, RoHS"
                 },
                 "Memóriakártya típusa": {
                     "Value": "1TB or 2TB SSD",
@@ -302,15 +370,15 @@
                 },
                 "Objektívek száma": {
                     "Value": "1-8",
-                    "Point": 0.5
+                    "Point": 1.0
                 },
                 "Működési hőmérséklet": {
                     "Value": "-10° C − 60° C (14° F − 140° F)",
-                    "Point": 0.5
+                    "Point": 0.432
                 },
                 "Garancia": {
                     "Value": "2 éves gyártó",
-                    "Point": 0.8
+                    "Point": 1.0
                 }
             },
             {
@@ -322,11 +390,11 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "1080p (1920x1080) Full HD",
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Maximális képkockasebesség": {
                     "Value": "15 FPS",
-                    "Point": 0.0
+                    "Point": 0.25
                 },
                 "Tervezett lefedettség": {
                     "Value": "Legfeljebb 4 egyedi szög",
@@ -346,7 +414,7 @@
                 },
                 "Nyelvek": {
                     "Value": "Angol/spanyol/kínai/orosz",
-                    "Point": 0.5
+                    "Point": 0.333
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Igen",
@@ -357,8 +425,7 @@
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "FCC, CE, RoHS",
-                    "Point": 0.5
+                    "Value": "FCC, CE, RoHS"
                 },
                 "Memóriakártya típusa": {
                     "Value": "SD, 128/258gb, Class 10",
@@ -370,11 +437,11 @@
                 },
                 "Működési hőmérséklet": {
                     "Value": "-10° C − 55° C (14° F − 131° F)",
-                    "Point": 0.5
+                    "Point": 0.401
                 },
                 "Garancia": {
                     "Value": "2 éves gyártó",
-                    "Point": 0.8
+                    "Point": 1.0
                 }
             },
             {
@@ -386,11 +453,11 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "1080p (1920x1080) Full HD",
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Maximális képkockasebesség": {
                     "Value": "30 FPS",
-                    "Point": 0.333
+                    "Point": 0.5
                 },
                 "Tervezett lefedettség": {
                     "Value": "Elülső + belső",
@@ -410,7 +477,7 @@
                 },
                 "Nyelvek": {
                     "Value": "angol",
-                    "Point": 0.5
+                    "Point": 0.083
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Igen",
@@ -421,8 +488,7 @@
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "RoHS, FCC, CE, IC, UKCA, E-Mark, ISO",
-                    "Point": 0.5
+                    "Value": "RoHS, FCC, CE, IC, UKCA, E-Mark, ISO"
                 },
                 "Memóriakártya típusa": {
                     "Value": "SD, 64/128gb, Class 10",
@@ -430,15 +496,15 @@
                 },
                 "Objektívek száma": {
                     "Value": "1-2",
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Működési hőmérséklet": {
                     "Value": "-10° C − 55° C (14° F − 131° F)",
-                    "Point": 0.5
+                    "Point": 0.401
                 },
                 "Garancia": {
                     "Value": "2 éves gyártó",
-                    "Point": 0.8
+                    "Point": 1.0
                 }
             },
             {
@@ -450,11 +516,11 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "4K (3840x2160) UHD",
-                    "Point": 0.5
+                    "Point": 1.0
                 },
                 "Maximális képkockasebesség": {
                     "Value": "30 FPS",
-                    "Point": 0.333
+                    "Point": 0.5
                 },
                 "Tervezett lefedettség": {
                     "Value": "Elülső + belső",
@@ -462,7 +528,7 @@
                 },
                 "Látószög (fokban)": {
                     "Value": "160-180°",
-                    "Point": 0.176
+                    "Point": 0.186
                 },
                 "GPS pozíció naplózás": {
                     "Value": "Igen, beépített",
@@ -474,7 +540,7 @@
                 },
                 "Nyelvek": {
                     "Value": "angol",
-                    "Point": 0.5
+                    "Point": 0.083
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Igen",
@@ -485,8 +551,7 @@
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "FCC, IC, CE, UKCA, RCM, Telec, WEEE, RoHS",
-                    "Point": 0.5
+                    "Value": "FCC, IC, CE, UKCA, RCM, Telec, WEEE, RoHS"
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD, 64/128/256/512gb, Class 10",
@@ -494,15 +559,15 @@
                 },
                 "Objektívek száma": {
                     "Value": 2,
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Működési hőmérséklet": {
                     "Value": "-20°C – 70°C (-4°F – 158°F )",
-                    "Point": 0.5
+                    "Point": 0.556
                 },
                 "Garancia": {
                     "Value": "2 éves gyártó",
-                    "Point": 0.8
+                    "Point": 1.0
                 }
             },
             {
@@ -514,11 +579,11 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "4K (3840x2160) UHD",
-                    "Point": 0.5
+                    "Point": 1.0
                 },
                 "Maximális képkockasebesség": {
                     "Value": "30 FPS",
-                    "Point": 0.333
+                    "Point": 0.5
                 },
                 "Tervezett lefedettség": {
                     "Value": "Elülső hátul",
@@ -526,7 +591,7 @@
                 },
                 "Látószög (fokban)": {
                     "Value": "140-159°",
-                    "Point": 0.087
+                    "Point": 0.09
                 },
                 "GPS pozíció naplózás": {
                     "Value": "Igen, beépített",
@@ -538,19 +603,18 @@
                 },
                 "Nyelvek": {
                     "Value": "angol",
-                    "Point": 0.5
+                    "Point": 0.083
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Automatikus",
-                    "Point": 0.5
+                    "Point": 1.0
                 },
                 "Videórészlet kiválasztása": {
                     "Value": "2 perc",
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "FCC, IC, CE, UKCA, RCM, Telec, WEEE, RoHS",
-                    "Point": 0.5
+                    "Value": "FCC, IC, CE, UKCA, RCM, Telec, WEEE, RoHS"
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD, 64/128/256/512gb, Class 10",
@@ -558,15 +622,15 @@
                 },
                 "Objektívek száma": {
                     "Value": 2,
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Működési hőmérséklet": {
                     "Value": "-20°C – 70°C (-4°F – 158°F )",
-                    "Point": 0.5
+                    "Point": 0.556
                 },
                 "Garancia": {
                     "Value": "2 éves gyártó",
-                    "Point": 0.8
+                    "Point": 1.0
                 }
             },
             {
@@ -578,11 +642,11 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "1080p (1920x1080) Full HD",
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Maximális képkockasebesség": {
                     "Value": "30 FPS",
-                    "Point": 0.333
+                    "Point": 0.5
                 },
                 "Tervezett lefedettség": {
                     "Value": "Csak elöl",
@@ -590,7 +654,7 @@
                 },
                 "Látószög (fokban)": {
                     "Value": "140-159°",
-                    "Point": 0.087
+                    "Point": 0.09
                 },
                 "GPS pozíció naplózás": {
                     "Value": "Igen, beépített",
@@ -602,7 +666,7 @@
                 },
                 "Nyelvek": {
                     "Value": "angol",
-                    "Point": 0.5
+                    "Point": 0.083
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Igen",
@@ -613,8 +677,7 @@
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "FCC, CE",
-                    "Point": 0.5
+                    "Value": "FCC, CE"
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD, 8/16/32/64/128/256/512gb, Class 10",
@@ -622,11 +685,11 @@
                 },
                 "Objektívek száma": {
                     "Value": 1,
-                    "Point": 0.5
+                    "Point": 0.125
                 },
                 "Működési hőmérséklet": {
                     "Value": "-20° C − 55° C (-4° F − 141° F)",
-                    "Point": 0.5
+                    "Point": 0.463
                 },
                 "Garancia": {
                     "Value": "1 éves gyártó",
@@ -642,11 +705,11 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "1080p (1920x1080) Full HD",
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Maximális képkockasebesség": {
                     "Value": "30 FPS",
-                    "Point": 0.333
+                    "Point": 0.5
                 },
                 "Tervezett lefedettség": {
                     "Value": "Csak elöl",
@@ -654,7 +717,7 @@
                 },
                 "Látószög (fokban)": {
                     "Value": "140-159°",
-                    "Point": 0.087
+                    "Point": 0.09
                 },
                 "GPS pozíció naplózás": {
                     "Value": "Nem",
@@ -666,7 +729,7 @@
                 },
                 "Nyelvek": {
                     "Value": "angol",
-                    "Point": 0.5
+                    "Point": 0.083
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Igen",
@@ -677,8 +740,7 @@
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "FCC, CE",
-                    "Point": 0.5
+                    "Value": "FCC, CE"
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD, 8/16/32/64/128/256/512gb, Class 10",
@@ -686,11 +748,11 @@
                 },
                 "Objektívek száma": {
                     "Value": 1,
-                    "Point": 0.5
+                    "Point": 0.125
                 },
                 "Működési hőmérséklet": {
                     "Value": "-20° C − 55° C (-4° F − 141° F)",
-                    "Point": 0.5
+                    "Point": 0.463
                 },
                 "Garancia": {
                     "Value": "1 éves gyártó",
@@ -706,11 +768,11 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "4K (3840x2160) UHD",
-                    "Point": 0.5
+                    "Point": 1.0
                 },
                 "Maximális képkockasebesség": {
                     "Value": "30 FPS",
-                    "Point": 0.333
+                    "Point": 0.5
                 },
                 "Tervezett lefedettség": {
                     "Value": "Elülső hátul",
@@ -718,7 +780,7 @@
                 },
                 "Látószög (fokban)": {
                     "Value": "160-180°",
-                    "Point": 0.176
+                    "Point": 0.186
                 },
                 "GPS pozíció naplózás": {
                     "Value": "Igen, beépített",
@@ -730,7 +792,7 @@
                 },
                 "Nyelvek": {
                     "Value": "angol",
-                    "Point": 0.5
+                    "Point": 0.083
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Igen",
@@ -741,8 +803,7 @@
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "FCC, CE, TELEC, RoHS, KCC, WEEE",
-                    "Point": 0.5
+                    "Value": "FCC, CE, TELEC, RoHS, KCC, WEEE"
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD, 64/128/256gb, Class 10",
@@ -750,15 +811,15 @@
                 },
                 "Objektívek száma": {
                     "Value": 2,
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Működési hőmérséklet": {
                     "Value": "-20° C − 70° C (-4° F − 158° F)",
-                    "Point": 0.5
+                    "Point": 0.556
                 },
                 "Garancia": {
                     "Value": "2 éves gyártó",
-                    "Point": 0.8
+                    "Point": 1.0
                 }
             },
             {
@@ -770,11 +831,11 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "1080p (1920x1080) Full HD",
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Maximális képkockasebesség": {
                     "Value": "30 FPS",
-                    "Point": 0.333
+                    "Point": 0.5
                 },
                 "Tervezett lefedettség": {
                     "Value": "Elülső hátul",
@@ -794,7 +855,7 @@
                 },
                 "Nyelvek": {
                     "Value": "angol",
-                    "Point": 0.5
+                    "Point": 0.083
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "",
@@ -805,8 +866,7 @@
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "FCC, CE, TELEC, RoHS, KCC, WEEE",
-                    "Point": 0.5
+                    "Value": "FCC, CE, TELEC, RoHS, KCC, WEEE"
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD, 32/64/128/256gb, Class 10",
@@ -814,15 +874,15 @@
                 },
                 "Objektívek száma": {
                     "Value": 2,
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Működési hőmérséklet": {
                     "Value": "-20° C − 70° C (-4° F − 158° F)",
-                    "Point": 0.5
+                    "Point": 0.556
                 },
                 "Garancia": {
                     "Value": "2 éves gyártó",
-                    "Point": 0.8
+                    "Point": 1.0
                 }
             },
             {
@@ -834,7 +894,7 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "1080p (1920x1080) Full HD",
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Maximális képkockasebesség": {
                     "Value": "60 FPS",
@@ -858,7 +918,7 @@
                 },
                 "Nyelvek": {
                     "Value": "angol",
-                    "Point": 0.5
+                    "Point": 0.083
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Igen",
@@ -869,8 +929,7 @@
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "FCC, CE, RoHS",
-                    "Point": 0.5
+                    "Value": "FCC, CE, RoHS"
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD, 32/64/128/256gb, Class 10",
@@ -878,15 +937,15 @@
                 },
                 "Objektívek száma": {
                     "Value": "1-2",
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Működési hőmérséklet": {
                     "Value": "-20° C − 70° C (-4° F − 158° F)",
-                    "Point": 0.5
+                    "Point": 0.556
                 },
                 "Garancia": {
                     "Value": "2 éves gyártó",
-                    "Point": 0.8
+                    "Point": 1.0
                 }
             },
             {
@@ -898,11 +957,11 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "1080p (1920x1080) Full HD",
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Maximális képkockasebesség": {
                     "Value": "30 FPS",
-                    "Point": 0.333
+                    "Point": 0.5
                 },
                 "Tervezett lefedettség": {
                     "Value": "Elülső hátul",
@@ -910,7 +969,7 @@
                 },
                 "Látószög (fokban)": {
                     "Value": "140-159°",
-                    "Point": 0.087
+                    "Point": 0.09
                 },
                 "GPS pozíció naplózás": {
                     "Value": "Igen, beépített",
@@ -933,8 +992,7 @@
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "FCC, CE, RoHS",
-                    "Point": 0.5
+                    "Value": "FCC, CE, RoHS"
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD, 32/64/128gb, Class 10",
@@ -942,11 +1000,11 @@
                 },
                 "Objektívek száma": {
                     "Value": 2,
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Működési hőmérséklet": {
                     "Value": "-10° C − 60° C (14° F − 140° F)",
-                    "Point": 0.5
+                    "Point": 0.432
                 },
                 "Garancia": {
                     "Value": "1 éves gyártó",
@@ -962,11 +1020,11 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "1080p (1920x1080) Full HD",
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Maximális képkockasebesség": {
                     "Value": "30 FPS",
-                    "Point": 0.333
+                    "Point": 0.5
                 },
                 "Tervezett lefedettség": {
                     "Value": "Csak elöl",
@@ -974,7 +1032,7 @@
                 },
                 "Látószög (fokban)": {
                     "Value": "140-159°",
-                    "Point": 0.087
+                    "Point": 0.09
                 },
                 "GPS pozíció naplózás": {
                     "Value": "Igen, beépített",
@@ -990,15 +1048,14 @@
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Auto",
-                    "Point": 0.5
+                    "Point": 1.0
                 },
                 "Videórészlet kiválasztása": {
                     "Value": "Nem",
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "FCC, CE, RoHS",
-                    "Point": 0.5
+                    "Value": "FCC, CE, RoHS"
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD, 16/32/64/128gb, Class 10",
@@ -1006,11 +1063,11 @@
                 },
                 "Objektívek száma": {
                     "Value": 1,
-                    "Point": 0.5
+                    "Point": 0.125
                 },
                 "Működési hőmérséklet": {
                     "Value": "-10° C − 60° C (14° F − 140° F)",
-                    "Point": 0.5
+                    "Point": 0.432
                 },
                 "Garancia": {
                     "Value": "1 éves gyártó",
@@ -1026,11 +1083,11 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "2K (2560x1440) QHD",
-                    "Point": 0.5
+                    "Point": 0.444
                 },
                 "Maximális képkockasebesség": {
                     "Value": "",
-                    "Point": 0.5
+                    "Point": 0.0
                 },
                 "Tervezett lefedettség": {
                     "Value": "Elülső hátul",
@@ -1050,7 +1107,7 @@
                 },
                 "Nyelvek": {
                     "Value": "Angol/multi",
-                    "Point": 0.6
+                    "Point": 0.167
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Igen",
@@ -1061,8 +1118,7 @@
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "FCC",
-                    "Point": 0.5
+                    "Value": "FCC"
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD, 32/64/128/256gb, Class 10",
@@ -1070,11 +1126,11 @@
                 },
                 "Objektívek száma": {
                     "Value": 2,
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Működési hőmérséklet": {
                     "Value": "-10° C − 60° C (14° F − 140° F)",
-                    "Point": 0.5
+                    "Point": 0.432
                 },
                 "Garancia": {
                     "Value": "1 éves gyártó",
@@ -1090,11 +1146,11 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "2K (2560x1440) QHD",
-                    "Point": 0.5
+                    "Point": 0.444
                 },
                 "Maximális képkockasebesség": {
                     "Value": "",
-                    "Point": 0.5
+                    "Point": 0.0
                 },
                 "Tervezett lefedettség": {
                     "Value": "Elülső hátul",
@@ -1114,7 +1170,7 @@
                 },
                 "Nyelvek": {
                     "Value": "Angol/multi",
-                    "Point": 0.6
+                    "Point": 0.167
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Igen",
@@ -1125,8 +1181,7 @@
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "FCC",
-                    "Point": 0.5
+                    "Value": "FCC"
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD, 32/64/128/256gb, Class 10",
@@ -1134,11 +1189,11 @@
                 },
                 "Objektívek száma": {
                     "Value": 2,
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Működési hőmérséklet": {
                     "Value": "-10° C − 60° C (14° F − 140° F)",
-                    "Point": 0.5
+                    "Point": 0.432
                 },
                 "Garancia": {
                     "Value": "1 éves gyártó",
@@ -1154,7 +1209,7 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "1080p (1920x1080) Full HD",
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Maximális képkockasebesség": {
                     "Value": "60 FPS",
@@ -1166,7 +1221,7 @@
                 },
                 "Látószög (fokban)": {
                     "Value": "160-180°",
-                    "Point": 0.176
+                    "Point": 0.186
                 },
                 "GPS pozíció naplózás": {
                     "Value": "Igen, beépített",
@@ -1178,7 +1233,7 @@
                 },
                 "Nyelvek": {
                     "Value": "angol",
-                    "Point": 0.5
+                    "Point": 0.083
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Igen",
@@ -1189,8 +1244,7 @@
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "FCC, IC, CE, UKCA, RCM, Telec, WEEE, RoHS",
-                    "Point": 0.5
+                    "Value": "FCC, IC, CE, UKCA, RCM, Telec, WEEE, RoHS"
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD, 64/128/256gb, Class 10",
@@ -1198,15 +1252,15 @@
                 },
                 "Objektívek száma": {
                     "Value": 3,
-                    "Point": 0.5
+                    "Point": 0.375
                 },
                 "Működési hőmérséklet": {
                     "Value": "-20°C – 70°C (-4°F – 158°F )",
-                    "Point": 0.5
+                    "Point": 0.556
                 },
                 "Garancia": {
                     "Value": "2 éves gyártó",
-                    "Point": 0.8
+                    "Point": 1.0
                 }
             },
             {
@@ -1218,11 +1272,11 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "2K (2560x1440) QHD",
-                    "Point": 0.5
+                    "Point": 0.444
                 },
                 "Maximális képkockasebesség": {
                     "Value": "",
-                    "Point": 0.5
+                    "Point": 0.0
                 },
                 "Tervezett lefedettség": {
                     "Value": "Csak elöl",
@@ -1242,7 +1296,7 @@
                 },
                 "Nyelvek": {
                     "Value": "Angol/multi",
-                    "Point": 0.6
+                    "Point": 0.167
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Igen",
@@ -1253,8 +1307,7 @@
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "FCC",
-                    "Point": 0.5
+                    "Value": "FCC"
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD, 32/64/128/256gb, Class 10",
@@ -1262,11 +1315,11 @@
                 },
                 "Objektívek száma": {
                     "Value": 1,
-                    "Point": 0.5
+                    "Point": 0.125
                 },
                 "Működési hőmérséklet": {
                     "Value": "-10° C − 60° C (14° F − 140° F)",
-                    "Point": 0.5
+                    "Point": 0.432
                 },
                 "Garancia": {
                     "Value": "1 éves gyártó",
@@ -1282,7 +1335,7 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "1080p (1920x1080) Full HD",
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Maximális képkockasebesség": {
                     "Value": "60 FPS",
@@ -1294,7 +1347,7 @@
                 },
                 "Látószög (fokban)": {
                     "Value": "160-180°",
-                    "Point": 0.176
+                    "Point": 0.186
                 },
                 "GPS pozíció naplózás": {
                     "Value": "Igen, beépített",
@@ -1306,7 +1359,7 @@
                 },
                 "Nyelvek": {
                     "Value": "angol",
-                    "Point": 0.5
+                    "Point": 0.083
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Igen",
@@ -1317,8 +1370,7 @@
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "FCC, IC, CE, UKCA, RCM, Telec, WEEE, RoHS",
-                    "Point": 0.5
+                    "Value": "FCC, IC, CE, UKCA, RCM, Telec, WEEE, RoHS"
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD, 64/128/256/512gb, Class 10",
@@ -1326,15 +1378,15 @@
                 },
                 "Objektívek száma": {
                     "Value": 3,
-                    "Point": 0.5
+                    "Point": 0.375
                 },
                 "Működési hőmérséklet": {
                     "Value": "-20°C – 70°C (-4°F – 158°F )",
-                    "Point": 0.5
+                    "Point": 0.556
                 },
                 "Garancia": {
                     "Value": "2 éves gyártó",
-                    "Point": 0.8
+                    "Point": 1.0
                 }
             },
             {
@@ -1346,7 +1398,7 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "1080p (1920x1080) Full HD",
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Maximális képkockasebesség": {
                     "Value": "60 FPS",
@@ -1358,7 +1410,7 @@
                 },
                 "Látószög (fokban)": {
                     "Value": "160-180°",
-                    "Point": 0.176
+                    "Point": 0.186
                 },
                 "GPS pozíció naplózás": {
                     "Value": "Igen, beépített",
@@ -1370,7 +1422,7 @@
                 },
                 "Nyelvek": {
                     "Value": "angol",
-                    "Point": 0.5
+                    "Point": 0.083
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Igen",
@@ -1381,8 +1433,7 @@
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "FCC, IC, CE, UKCA, RCM, Telec, WEEE, RoHS",
-                    "Point": 0.5
+                    "Value": "FCC, IC, CE, UKCA, RCM, Telec, WEEE, RoHS"
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD, 64/128/256/512gb, Class 10",
@@ -1390,15 +1441,15 @@
                 },
                 "Objektívek száma": {
                     "Value": 3,
-                    "Point": 0.5
+                    "Point": 0.375
                 },
                 "Működési hőmérséklet": {
                     "Value": "-20°C – 70°C (-4°F – 158°F )",
-                    "Point": 0.5
+                    "Point": 0.556
                 },
                 "Garancia": {
                     "Value": "2 éves gyártó",
-                    "Point": 0.8
+                    "Point": 1.0
                 }
             },
             {
@@ -1410,7 +1461,7 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "1080p (1920x1080) Full HD",
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Maximális képkockasebesség": {
                     "Value": "60 FPS",
@@ -1434,19 +1485,18 @@
                 },
                 "Nyelvek": {
                     "Value": "angol",
-                    "Point": 0.5
+                    "Point": 0.083
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Nem",
-                    "Point": 0.5
+                    "Point": 0.0
                 },
                 "Videórészlet kiválasztása": {
                     "Value": "1 perc",
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "FCC, ISED, CE, UKCA, RCM, Telec, RoHS, WEEE, KC",
-                    "Point": 0.5
+                    "Value": "FCC, ISED, CE, UKCA, RCM, Telec, RoHS, WEEE, KC"
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD, 64/128/256gb, Class 10",
@@ -1454,15 +1504,15 @@
                 },
                 "Objektívek száma": {
                     "Value": 2,
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Működési hőmérséklet": {
                     "Value": "-20℃ – 70℃ (-4°F – 158°F)",
-                    "Point": 0.5
+                    "Point": 1.0
                 },
                 "Garancia": {
                     "Value": "2 éves gyártó",
-                    "Point": 0.8
+                    "Point": 1.0
                 }
             },
             {
@@ -1474,7 +1524,7 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "1080p (1920x1080) Full HD",
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Maximális képkockasebesség": {
                     "Value": "60 FPS",
@@ -1498,19 +1548,18 @@
                 },
                 "Nyelvek": {
                     "Value": "angol",
-                    "Point": 0.5
+                    "Point": 0.083
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Auto",
-                    "Point": 0.5
+                    "Point": 1.0
                 },
                 "Videórészlet kiválasztása": {
                     "Value": "1 perc",
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "FCC, ISED, CE, UKCA, RCM, Telec, RoHS, WEEE, KC",
-                    "Point": 0.5
+                    "Value": "FCC, ISED, CE, UKCA, RCM, Telec, RoHS, WEEE, KC"
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD, 64/128/256gb, Class 10",
@@ -1518,15 +1567,15 @@
                 },
                 "Objektívek száma": {
                     "Value": 2,
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Működési hőmérséklet": {
                     "Value": "-20 °C − 70 °C (-4 °F − 158 °F)",
-                    "Point": 0.5
+                    "Point": 0.0
                 },
                 "Garancia": {
                     "Value": "2 éves gyártó",
-                    "Point": 0.8
+                    "Point": 1.0
                 }
             },
             {
@@ -1538,7 +1587,7 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "2K (2560x1440) QHD",
-                    "Point": 0.5
+                    "Point": 0.444
                 },
                 "Maximális képkockasebesség": {
                     "Value": "60 FPS",
@@ -1550,7 +1599,7 @@
                 },
                 "Látószög (fokban)": {
                     "Value": "140-159°",
-                    "Point": 0.087
+                    "Point": 0.09
                 },
                 "GPS pozíció naplózás": {
                     "Value": "Igen, beépített",
@@ -1562,7 +1611,7 @@
                 },
                 "Nyelvek": {
                     "Value": "Angol/spanyol/kínai/orosz",
-                    "Point": 0.7
+                    "Point": 0.333
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Igen",
@@ -1573,8 +1622,7 @@
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "FCC",
-                    "Point": 0.5
+                    "Value": "FCC"
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD, 32/64/128/256gb, Class 10",
@@ -1582,11 +1630,11 @@
                 },
                 "Objektívek száma": {
                     "Value": 2,
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Működési hőmérséklet": {
                     "Value": "-10° C − 60° C (14° F − 140° F)",
-                    "Point": 0.5
+                    "Point": 0.432
                 },
                 "Garancia": {
                     "Value": "1 éves gyártó",
@@ -1602,7 +1650,7 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "1080p (1920x1080) Full HD",
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Maximális képkockasebesség": {
                     "Value": "60 FPS",
@@ -1626,19 +1674,18 @@
                 },
                 "Nyelvek": {
                     "Value": "angol",
-                    "Point": 0.5
+                    "Point": 0.083
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Nem",
-                    "Point": 0.5
+                    "Point": 0.0
                 },
                 "Videórészlet kiválasztása": {
                     "Value": "1 perc",
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "FCC, CE, TELEC, RoHS, KCC, WEEE",
-                    "Point": 0.5
+                    "Value": "FCC, CE, TELEC, RoHS, KCC, WEEE"
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD 64/128/256gb, Class 10",
@@ -1646,15 +1693,15 @@
                 },
                 "Objektívek száma": {
                     "Value": 2,
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Működési hőmérséklet": {
                     "Value": "-20° C – 60° C (-4° F – 140° F)",
-                    "Point": 0.5
+                    "Point": 0.494
                 },
                 "Garancia": {
                     "Value": "2 éves gyártó",
-                    "Point": 0.8
+                    "Point": 1.0
                 }
             },
             {
@@ -1666,7 +1713,7 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "2K (2560x1440) QHD",
-                    "Point": 0.5
+                    "Point": 0.444
                 },
                 "Maximális képkockasebesség": {
                     "Value": "60 FPS",
@@ -1678,7 +1725,7 @@
                 },
                 "Látószög (fokban)": {
                     "Value": "140-159°",
-                    "Point": 0.087
+                    "Point": 0.09
                 },
                 "GPS pozíció naplózás": {
                     "Value": "Igen, beépített",
@@ -1690,7 +1737,7 @@
                 },
                 "Nyelvek": {
                     "Value": "angol",
-                    "Point": 0.5
+                    "Point": 0.083
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Igen",
@@ -1701,8 +1748,7 @@
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "FCC",
-                    "Point": 0.5
+                    "Value": "FCC"
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD, 32/64/128/256gb, Class 10",
@@ -1710,11 +1756,11 @@
                 },
                 "Objektívek száma": {
                     "Value": 1,
-                    "Point": 0.5
+                    "Point": 0.125
                 },
                 "Működési hőmérséklet": {
                     "Value": "-10° C − 60° C (14° F − 140° F)",
-                    "Point": 0.5
+                    "Point": 0.432
                 },
                 "Garancia": {
                     "Value": "1 éves gyártó",
@@ -1730,7 +1776,7 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "1080p (1920x1080) Full HD",
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Maximális képkockasebesség": {
                     "Value": "60 FPS",
@@ -1754,19 +1800,18 @@
                 },
                 "Nyelvek": {
                     "Value": "angol",
-                    "Point": 0.5
+                    "Point": 0.083
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Auto",
-                    "Point": 0.5
+                    "Point": 1.0
                 },
                 "Videórészlet kiválasztása": {
                     "Value": "1 perc",
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "FCC, CE, TELEC, RoHS, KCC, WEEE",
-                    "Point": 0.5
+                    "Value": "FCC, CE, TELEC, RoHS, KCC, WEEE"
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD, 64/128/256gb, Class 10",
@@ -1774,15 +1819,15 @@
                 },
                 "Objektívek száma": {
                     "Value": 2,
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Működési hőmérséklet": {
                     "Value": "-20° C – 60° C (-4° F – 140° F)",
-                    "Point": 0.5
+                    "Point": 0.494
                 },
                 "Garancia": {
                     "Value": "2 éves gyártó",
-                    "Point": 0.8
+                    "Point": 1.0
                 }
             },
             {
@@ -1794,7 +1839,7 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "1080p (1920x1080) Full HD",
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Maximális képkockasebesség": {
                     "Value": "60 FPS",
@@ -1818,7 +1863,7 @@
                 },
                 "Nyelvek": {
                     "Value": "angol",
-                    "Point": 0.5
+                    "Point": 0.083
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Igen",
@@ -1829,8 +1874,7 @@
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "FCC, CE, TELEC, RoHS, KCC, WEEE",
-                    "Point": 0.5
+                    "Value": "FCC, CE, TELEC, RoHS, KCC, WEEE"
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD, 64/128/256gb, Class 10",
@@ -1838,15 +1882,15 @@
                 },
                 "Objektívek száma": {
                     "Value": "1-2",
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Működési hőmérséklet": {
                     "Value": "-20° C – 60° C (-4° F – 140° F)",
-                    "Point": 0.5
+                    "Point": 0.494
                 },
                 "Garancia": {
                     "Value": "2 éves gyártó",
-                    "Point": 0.8
+                    "Point": 1.0
                 }
             },
             {
@@ -1858,7 +1902,7 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "4K (3840x2160) UHD",
-                    "Point": 0.5
+                    "Point": 1.0
                 },
                 "Maximális képkockasebesség": {
                     "Value": "60 FPS",
@@ -1882,7 +1926,7 @@
                 },
                 "Nyelvek": {
                     "Value": "Angol/spanyol/kínai/orosz/több",
-                    "Point": 0.8
+                    "Point": 0.417
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Igen",
@@ -1893,8 +1937,7 @@
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "",
-                    "Point": 0.5
+                    "Value": ""
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD, 64/128/256gb, Class 10",
@@ -1902,15 +1945,15 @@
                 },
                 "Objektívek száma": {
                     "Value": 2,
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Működési hőmérséklet": {
                     "Value": "-10° C − 60° C (14° F − 140° F)",
-                    "Point": 0.5
+                    "Point": 0.432
                 },
                 "Garancia": {
                     "Value": "2 éves gyártó",
-                    "Point": 0.8
+                    "Point": 1.0
                 }
             },
             {
@@ -1922,11 +1965,11 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "4K (3840x2160) UHD",
-                    "Point": 0.5
+                    "Point": 1.0
                 },
                 "Maximális képkockasebesség": {
                     "Value": "30 FPS",
-                    "Point": 0.333
+                    "Point": 0.5
                 },
                 "Tervezett lefedettség": {
                     "Value": "Elülső hátul",
@@ -1946,19 +1989,18 @@
                 },
                 "Nyelvek": {
                     "Value": "angol",
-                    "Point": 0.5
+                    "Point": 0.083
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Auto",
-                    "Point": 0.5
+                    "Point": 1.0
                 },
                 "Videórészlet kiválasztása": {
                     "Value": "1 perc",
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "FCC, ISED, CE, UKCA, RCM, Telec, RoHS, WEEE, KC",
-                    "Point": 0.5
+                    "Value": "FCC, ISED, CE, UKCA, RCM, Telec, RoHS, WEEE, KC"
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD, 64/128/256/512gb, Class 10",
@@ -1966,15 +2008,15 @@
                 },
                 "Objektívek száma": {
                     "Value": 2,
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Működési hőmérséklet": {
                     "Value": "20 °C − 70 °C (-4 °F − 158 °F)",
-                    "Point": 0.5
+                    "Point": 0.0
                 },
                 "Garancia": {
                     "Value": "2 éves gyártó",
-                    "Point": 0.8
+                    "Point": 1.0
                 }
             },
             {
@@ -1986,7 +2028,7 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "4K (3840x2160) UHD",
-                    "Point": 0.5
+                    "Point": 1.0
                 },
                 "Maximális képkockasebesség": {
                     "Value": "60 FPS",
@@ -2010,7 +2052,7 @@
                 },
                 "Nyelvek": {
                     "Value": "Angol/spanyol/kínai/orosz/több",
-                    "Point": 0.8
+                    "Point": 0.417
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Igen",
@@ -2021,8 +2063,7 @@
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "",
-                    "Point": 0.5
+                    "Value": ""
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD, 64/128/256gb, Class 10",
@@ -2030,15 +2071,15 @@
                 },
                 "Objektívek száma": {
                     "Value": 1,
-                    "Point": 0.5
+                    "Point": 0.125
                 },
                 "Működési hőmérséklet": {
                     "Value": "-10° C − 60° C (14° F − 140° F)",
-                    "Point": 0.5
+                    "Point": 0.432
                 },
                 "Garancia": {
                     "Value": "2 éves gyártó",
-                    "Point": 0.8
+                    "Point": 1.0
                 }
             },
             {
@@ -2050,11 +2091,11 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "4K (3840x2160) UHD",
-                    "Point": 0.5
+                    "Point": 1.0
                 },
                 "Maximális képkockasebesség": {
                     "Value": "30 FPS",
-                    "Point": 0.333
+                    "Point": 0.5
                 },
                 "Tervezett lefedettség": {
                     "Value": "Elülső + belső",
@@ -2062,7 +2103,7 @@
                 },
                 "Látószög (fokban)": {
                     "Value": "140-159°",
-                    "Point": 0.087
+                    "Point": 0.09
                 },
                 "GPS pozíció naplózás": {
                     "Value": "Igen, beépített",
@@ -2074,7 +2115,7 @@
                 },
                 "Nyelvek": {
                     "Value": "angol",
-                    "Point": 0.5
+                    "Point": 0.083
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Igen",
@@ -2085,8 +2126,7 @@
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "FCC, CE, TELEC, RoHS, KCC, WEEE",
-                    "Point": 0.5
+                    "Value": "FCC, CE, TELEC, RoHS, KCC, WEEE"
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD, 64/128/256/512gb, Class 10",
@@ -2094,15 +2134,15 @@
                 },
                 "Objektívek száma": {
                     "Value": 2,
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Működési hőmérséklet": {
                     "Value": "-20° C − 70° C (-4° F − 158° F)",
-                    "Point": 0.5
+                    "Point": 0.556
                 },
                 "Garancia": {
                     "Value": "2 éves gyártó",
-                    "Point": 0.8
+                    "Point": 1.0
                 }
             },
             {
@@ -2114,7 +2154,7 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "4K (3840x2160) UHD",
-                    "Point": 0.5
+                    "Point": 1.0
                 },
                 "Maximális képkockasebesség": {
                     "Value": "60 FPS",
@@ -2126,7 +2166,7 @@
                 },
                 "Látószög (fokban)": {
                     "Value": "140-159°",
-                    "Point": 0.087
+                    "Point": 0.09
                 },
                 "GPS pozíció naplózás": {
                     "Value": "Igen, beépített",
@@ -2138,7 +2178,7 @@
                 },
                 "Nyelvek": {
                     "Value": "angol",
-                    "Point": 0.5
+                    "Point": 0.083
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Igen",
@@ -2149,8 +2189,7 @@
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "FCC",
-                    "Point": 0.5
+                    "Value": "FCC"
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD, 64/128/256gb, Class 10",
@@ -2158,11 +2197,11 @@
                 },
                 "Objektívek száma": {
                     "Value": 2,
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Működési hőmérséklet": {
                     "Value": "-10° C − 60° C (14° F − 140° F)",
-                    "Point": 0.5
+                    "Point": 0.432
                 },
                 "Garancia": {
                     "Value": "1 éves gyártó",
@@ -2178,7 +2217,7 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "2K (2560x1440) QHD",
-                    "Point": 0.5
+                    "Point": 0.444
                 },
                 "Maximális képkockasebesség": {
                     "Value": "60 FPS",
@@ -2190,7 +2229,7 @@
                 },
                 "Látószög (fokban)": {
                     "Value": "140-159°",
-                    "Point": 0.087
+                    "Point": 0.09
                 },
                 "GPS pozíció naplózás": {
                     "Value": "Igen, beépített",
@@ -2202,7 +2241,7 @@
                 },
                 "Nyelvek": {
                     "Value": "Angol/spanyol/kínai/orosz",
-                    "Point": 0.7
+                    "Point": 0.333
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Igen",
@@ -2213,8 +2252,7 @@
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "FCC",
-                    "Point": 0.5
+                    "Value": "FCC"
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD, 32/64/128/256gb, Class 10",
@@ -2222,11 +2260,11 @@
                 },
                 "Objektívek száma": {
                     "Value": 2,
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Működési hőmérséklet": {
                     "Value": "-10° C − 60° C (14° F − 140° F)",
-                    "Point": 0.5
+                    "Point": 0.432
                 },
                 "Garancia": {
                     "Value": "1 éves gyártó",
@@ -2242,11 +2280,11 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "1080p (1920x1080) Full HD",
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Maximális képkockasebesség": {
                     "Value": "30 FPS",
-                    "Point": 0.333
+                    "Point": 0.5
                 },
                 "Tervezett lefedettség": {
                     "Value": "Csak elöl",
@@ -2254,7 +2292,7 @@
                 },
                 "Látószög (fokban)": {
                     "Value": "140-159°",
-                    "Point": 0.087
+                    "Point": 0.09
                 },
                 "GPS pozíció naplózás": {
                     "Value": "Igen, beépített",
@@ -2266,7 +2304,7 @@
                 },
                 "Nyelvek": {
                     "Value": "angol",
-                    "Point": 0.5
+                    "Point": 0.083
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Igen",
@@ -2277,8 +2315,7 @@
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "FCC, CE",
-                    "Point": 0.5
+                    "Value": "FCC, CE"
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD, 8/16/32/64/128/256/512gb, Class 10",
@@ -2286,11 +2323,11 @@
                 },
                 "Objektívek száma": {
                     "Value": 1,
-                    "Point": 0.5
+                    "Point": 0.125
                 },
                 "Működési hőmérséklet": {
                     "Value": "-20° C − 55° C (-4° F − 141° F)",
-                    "Point": 0.5
+                    "Point": 0.463
                 },
                 "Garancia": {
                     "Value": "1 éves gyártó",
@@ -2306,11 +2343,11 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "2.7K (2592x1944) QHD",
-                    "Point": 0.5
+                    "Point": 0.444
                 },
                 "Maximális képkockasebesség": {
                     "Value": "30 FPS",
-                    "Point": 0.333
+                    "Point": 0.5
                 },
                 "Tervezett lefedettség": {
                     "Value": "Elülső + belső + hátsó",
@@ -2330,7 +2367,7 @@
                 },
                 "Nyelvek": {
                     "Value": "angol",
-                    "Point": 0.5
+                    "Point": 0.083
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Igen",
@@ -2341,8 +2378,7 @@
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "FCC",
-                    "Point": 0.5
+                    "Value": "FCC"
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD, 32/64/128/256gb, Class 10",
@@ -2350,11 +2386,11 @@
                 },
                 "Objektívek száma": {
                     "Value": 3,
-                    "Point": 0.5
+                    "Point": 0.375
                 },
                 "Működési hőmérséklet": {
                     "Value": "-20° C - 70° C (4° F - 158° F)",
-                    "Point": 0.5
+                    "Point": 0.556
                 },
                 "Garancia": {
                     "Value": "1 éves gyártó",
@@ -2370,11 +2406,11 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "2.7K (2592x1944) QHD",
-                    "Point": 0.5
+                    "Point": 0.444
                 },
                 "Maximális képkockasebesség": {
                     "Value": "30 FPS",
-                    "Point": 0.333
+                    "Point": 0.5
                 },
                 "Tervezett lefedettség": {
                     "Value": "Elülső + belső + hátsó",
@@ -2394,7 +2430,7 @@
                 },
                 "Nyelvek": {
                     "Value": "angol",
-                    "Point": 0.5
+                    "Point": 0.083
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Igen",
@@ -2405,8 +2441,7 @@
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "FCC",
-                    "Point": 0.5
+                    "Value": "FCC"
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD, 32/64/128/256/512gb, Class 10",
@@ -2418,7 +2453,7 @@
                 },
                 "Működési hőmérséklet": {
                     "Value": "-20° C - 60° C (4° F - 140° F)",
-                    "Point": 0.5
+                    "Point": 0.494
                 },
                 "Garancia": {
                     "Value": "1 éves gyártó",
@@ -2434,11 +2469,11 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "4K (3840x2160) UHD",
-                    "Point": 0.5
+                    "Point": 1.0
                 },
                 "Maximális képkockasebesség": {
                     "Value": "30 FPS",
-                    "Point": 0.333
+                    "Point": 0.5
                 },
                 "Tervezett lefedettség": {
                     "Value": "Elülső + belső + hátsó",
@@ -2446,7 +2481,7 @@
                 },
                 "Látószög (fokban)": {
                     "Value": "160-180°",
-                    "Point": 0.176
+                    "Point": 0.186
                 },
                 "GPS pozíció naplózás": {
                     "Value": "Igen, beépített",
@@ -2458,7 +2493,7 @@
                 },
                 "Nyelvek": {
                     "Value": "angol",
-                    "Point": 0.5
+                    "Point": 0.083
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Igen",
@@ -2469,8 +2504,7 @@
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "FCC",
-                    "Point": 0.5
+                    "Value": "FCC"
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD, 32/64/128/256/512gb, Class 10",
@@ -2478,11 +2512,11 @@
                 },
                 "Objektívek száma": {
                     "Value": 3,
-                    "Point": 0.5
+                    "Point": 0.375
                 },
                 "Működési hőmérséklet": {
                     "Value": "-20° C - 65° C (4° F - 149° F)",
-                    "Point": 0.5
+                    "Point": 0.525
                 },
                 "Garancia": {
                     "Value": "1 éves gyártó",
@@ -2498,7 +2532,7 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "2K (2560x1440) QHD",
-                    "Point": 0.5
+                    "Point": 0.444
                 },
                 "Maximális képkockasebesség": {
                     "Value": "60 FPS",
@@ -2510,7 +2544,7 @@
                 },
                 "Látószög (fokban)": {
                     "Value": "140-159°",
-                    "Point": 0.087
+                    "Point": 0.09
                 },
                 "GPS pozíció naplózás": {
                     "Value": "Igen, beépített",
@@ -2522,19 +2556,18 @@
                 },
                 "Nyelvek": {
                     "Value": "Angol, orosz, kínai",
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Auto",
-                    "Point": 0.5
+                    "Point": 1.0
                 },
                 "Videórészlet kiválasztása": {
                     "Value": "1/2/3/5/10 perc",
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "CE",
-                    "Point": 0.5
+                    "Value": "CE"
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD, 32/64/128/256/512gb, Class 10",
@@ -2542,11 +2575,11 @@
                 },
                 "Objektívek száma": {
                     "Value": 1,
-                    "Point": 0.5
+                    "Point": 0.125
                 },
                 "Működési hőmérséklet": {
                     "Value": "",
-                    "Point": 0.5
+                    "Point": 0.0
                 },
                 "Garancia": {
                     "Value": "1 éves gyártó",
@@ -2562,11 +2595,11 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "2K (2560x1440) QHD",
-                    "Point": 0.5
+                    "Point": 0.444
                 },
                 "Maximális képkockasebesség": {
                     "Value": "30 FPS",
-                    "Point": 0.333
+                    "Point": 0.5
                 },
                 "Tervezett lefedettség": {
                     "Value": "Csak elöl",
@@ -2586,19 +2619,18 @@
                 },
                 "Nyelvek": {
                     "Value": "",
-                    "Point": 0.5
+                    "Point": 0.0
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Auto",
-                    "Point": 0.5
+                    "Point": 1.0
                 },
                 "Videórészlet kiválasztása": {
                     "Value": "1/3/5/10 perc",
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "FCC, IC",
-                    "Point": 0.5
+                    "Value": "FCC, IC"
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD, 32/64/128/256gb, Class 10",
@@ -2606,11 +2638,11 @@
                 },
                 "Objektívek száma": {
                     "Value": 1,
-                    "Point": 0.5
+                    "Point": 0.125
                 },
                 "Működési hőmérséklet": {
                     "Value": "-10° C − 65° C (14° F − 149° F)",
-                    "Point": 0.5
+                    "Point": 0.463
                 },
                 "Garancia": {
                     "Value": "1 éves gyártó",
@@ -2626,11 +2658,11 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "2K (2560x1440) QHD",
-                    "Point": 0.5
+                    "Point": 0.444
                 },
                 "Maximális képkockasebesség": {
                     "Value": "30 FPS",
-                    "Point": 0.333
+                    "Point": 0.5
                 },
                 "Tervezett lefedettség": {
                     "Value": "Csak elöl",
@@ -2638,7 +2670,7 @@
                 },
                 "Látószög (fokban)": {
                     "Value": "140-159°",
-                    "Point": 0.087
+                    "Point": 0.09
                 },
                 "GPS pozíció naplózás": {
                     "Value": "Igen, beépített",
@@ -2650,19 +2682,18 @@
                 },
                 "Nyelvek": {
                     "Value": "angol",
-                    "Point": 0.5
+                    "Point": 0.083
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Auto",
-                    "Point": 0.5
+                    "Point": 1.0
                 },
                 "Videórészlet kiválasztása": {
                     "Value": "",
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "",
-                    "Point": 0.5
+                    "Value": ""
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD, 32/64/128/256/512gb, Class 10",
@@ -2670,11 +2701,11 @@
                 },
                 "Objektívek száma": {
                     "Value": 1,
-                    "Point": 0.5
+                    "Point": 0.125
                 },
                 "Működési hőmérséklet": {
                     "Value": "-20° C − 65° C (-4° F − 149° F)",
-                    "Point": 0.5
+                    "Point": 0.525
                 },
                 "Garancia": {
                     "Value": "1 éves gyártó",
@@ -2690,11 +2721,11 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "1080p (1920x1080) Full HD",
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Maximális képkockasebesség": {
                     "Value": "30 FPS",
-                    "Point": 0.333
+                    "Point": 0.5
                 },
                 "Tervezett lefedettség": {
                     "Value": "Csak elöl",
@@ -2702,7 +2733,7 @@
                 },
                 "Látószög (fokban)": {
                     "Value": "140-159°",
-                    "Point": 0.087
+                    "Point": 0.09
                 },
                 "GPS pozíció naplózás": {
                     "Value": "Igen, beépített",
@@ -2714,7 +2745,7 @@
                 },
                 "Nyelvek": {
                     "Value": "angol",
-                    "Point": 0.5
+                    "Point": 0.083
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Igen",
@@ -2725,8 +2756,7 @@
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "FCC",
-                    "Point": 0.5
+                    "Value": "FCC"
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD, 16/32/64/128/256",
@@ -2734,11 +2764,11 @@
                 },
                 "Objektívek száma": {
                     "Value": 1,
-                    "Point": 0.5
+                    "Point": 0.125
                 },
                 "Működési hőmérséklet": {
                     "Value": "-20° to 55°C (from -4° to 131°F)",
-                    "Point": 0.5
+                    "Point": 0.463
                 },
                 "Garancia": {
                     "Value": "1 éves gyártó",
@@ -2754,11 +2784,11 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "1080p (1920x1080) Full HD",
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Maximális képkockasebesség": {
                     "Value": "30 FPS",
-                    "Point": 0.333
+                    "Point": 0.5
                 },
                 "Tervezett lefedettség": {
                     "Value": "Csak elöl",
@@ -2766,7 +2796,7 @@
                 },
                 "Látószög (fokban)": {
                     "Value": "140-159°",
-                    "Point": 0.087
+                    "Point": 0.09
                 },
                 "GPS pozíció naplózás": {
                     "Value": "Igen, beépített",
@@ -2778,7 +2808,7 @@
                 },
                 "Nyelvek": {
                     "Value": "angol",
-                    "Point": 0.5
+                    "Point": 0.083
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Igen",
@@ -2789,8 +2819,7 @@
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "FCC",
-                    "Point": 0.5
+                    "Value": "FCC"
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD, 16/32/64/128/256",
@@ -2798,11 +2827,11 @@
                 },
                 "Objektívek száma": {
                     "Value": 1,
-                    "Point": 0.5
+                    "Point": 0.125
                 },
                 "Működési hőmérséklet": {
                     "Value": "-20° to 55°C (from -4° to 131°F)",
-                    "Point": 0.5
+                    "Point": 0.463
                 },
                 "Garancia": {
                     "Value": "1 éves gyártó",
@@ -2818,11 +2847,11 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "1080p (1920x1080) Full HD",
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Maximális képkockasebesség": {
                     "Value": "30 FPS",
-                    "Point": 0.333
+                    "Point": 0.5
                 },
                 "Tervezett lefedettség": {
                     "Value": "Csak elöl",
@@ -2830,7 +2859,7 @@
                 },
                 "Látószög (fokban)": {
                     "Value": "140-159°",
-                    "Point": 0.087
+                    "Point": 0.09
                 },
                 "GPS pozíció naplózás": {
                     "Value": "Igen, beépített",
@@ -2842,7 +2871,7 @@
                 },
                 "Nyelvek": {
                     "Value": "angol",
-                    "Point": 0.5
+                    "Point": 0.083
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Igen",
@@ -2853,8 +2882,7 @@
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "FCC",
-                    "Point": 0.5
+                    "Value": "FCC"
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD, 16/32/64/128/256",
@@ -2862,11 +2890,11 @@
                 },
                 "Objektívek száma": {
                     "Value": 1,
-                    "Point": 0.5
+                    "Point": 0.125
                 },
                 "Működési hőmérséklet": {
                     "Value": "-20° to 55°C (from -4° to 131°F)",
-                    "Point": 0.5
+                    "Point": 0.463
                 },
                 "Garancia": {
                     "Value": "1 éves gyártó",
@@ -2882,11 +2910,11 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "720p (1280x720) HD",
-                    "Point": 0.5
+                    "Point": 0.0
                 },
                 "Maximális képkockasebesség": {
                     "Value": "",
-                    "Point": 0.5
+                    "Point": 0.0
                 },
                 "Tervezett lefedettség": {
                     "Value": "",
@@ -2894,7 +2922,7 @@
                 },
                 "Látószög (fokban)": {
                     "Value": "160-180°",
-                    "Point": 0.176
+                    "Point": 0.186
                 },
                 "GPS pozíció naplózás": {
                     "Value": "Nem",
@@ -2906,19 +2934,18 @@
                 },
                 "Nyelvek": {
                     "Value": "angol",
-                    "Point": 0.5
+                    "Point": 0.083
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Auto",
-                    "Point": 0.5
+                    "Point": 1.0
                 },
                 "Videórészlet kiválasztása": {
                     "Value": "",
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "FCC",
-                    "Point": 0.5
+                    "Value": "FCC"
                 },
                 "Memóriakártya típusa": {
                     "Value": "",
@@ -2926,11 +2953,11 @@
                 },
                 "Objektívek száma": {
                     "Value": "",
-                    "Point": 0.5
+                    "Point": 0.0
                 },
                 "Működési hőmérséklet": {
                     "Value": "-20° to 60°C (from -4° to 140°F)",
-                    "Point": 0.5
+                    "Point": 0.494
                 },
                 "Garancia": {
                     "Value": "1 éves gyártó",
@@ -2946,7 +2973,7 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "4K (3840x2160) UHD",
-                    "Point": 0.5
+                    "Point": 1.0
                 },
                 "Maximális képkockasebesség": {
                     "Value": "60 FPS",
@@ -2958,7 +2985,7 @@
                 },
                 "Látószög (fokban)": {
                     "Value": "140-159°",
-                    "Point": 0.087
+                    "Point": 0.09
                 },
                 "GPS pozíció naplózás": {
                     "Value": "Igen, beépített",
@@ -2970,7 +2997,7 @@
                 },
                 "Nyelvek": {
                     "Value": "Angol/spanyol/kínai/orosz",
-                    "Point": 0.7
+                    "Point": 0.333
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Igen",
@@ -2981,8 +3008,7 @@
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "FCC, CE, RoHS",
-                    "Point": 0.5
+                    "Value": "FCC, CE, RoHS"
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD, 32/64/128gb, Class 10",
@@ -2990,11 +3016,11 @@
                 },
                 "Objektívek száma": {
                     "Value": 2,
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Működési hőmérséklet": {
                     "Value": "-10° C − 60° C (14° F − 140° F)",
-                    "Point": 0.5
+                    "Point": 0.432
                 },
                 "Garancia": {
                     "Value": "1 éves gyártó",
@@ -3010,7 +3036,7 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "4K (3840x2160) UHD",
-                    "Point": 0.5
+                    "Point": 1.0
                 },
                 "Maximális képkockasebesség": {
                     "Value": "60 FPS",
@@ -3022,7 +3048,7 @@
                 },
                 "Látószög (fokban)": {
                     "Value": "140-159°",
-                    "Point": 0.087
+                    "Point": 0.09
                 },
                 "GPS pozíció naplózás": {
                     "Value": "Igen, beépített",
@@ -3034,7 +3060,7 @@
                 },
                 "Nyelvek": {
                     "Value": "angol",
-                    "Point": 0.5
+                    "Point": 0.083
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Igen",
@@ -3045,8 +3071,7 @@
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "FCC",
-                    "Point": 0.5
+                    "Value": "FCC"
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD, 64/128/256gb, Class 10",
@@ -3054,11 +3079,11 @@
                 },
                 "Objektívek száma": {
                     "Value": 2,
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Működési hőmérséklet": {
                     "Value": "-10° C − 60° C (14° F − 140° F)",
-                    "Point": 0.5
+                    "Point": 0.432
                 },
                 "Garancia": {
                     "Value": "1 éves gyártó",
@@ -3074,11 +3099,11 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "4K (3840x2160) UHD",
-                    "Point": 0.5
+                    "Point": 1.0
                 },
                 "Maximális képkockasebesség": {
                     "Value": "30 FPS",
-                    "Point": 0.333
+                    "Point": 0.5
                 },
                 "Tervezett lefedettség": {
                     "Value": "Elülső hátul",
@@ -3086,7 +3111,7 @@
                 },
                 "Látószög (fokban)": {
                     "Value": "140-159°",
-                    "Point": 0.087
+                    "Point": 0.09
                 },
                 "GPS pozíció naplózás": {
                     "Value": "Igen, beépített",
@@ -3098,19 +3123,18 @@
                 },
                 "Nyelvek": {
                     "Value": "angol",
-                    "Point": 0.5
+                    "Point": 0.083
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Auto",
-                    "Point": 0.5
+                    "Point": 1.0
                 },
                 "Videórészlet kiválasztása": {
                     "Value": "1/3/5/10 perc",
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "FCC",
-                    "Point": 0.5
+                    "Value": "FCC"
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD, 32/64/128/256/512gb, Class 10",
@@ -3118,11 +3142,11 @@
                 },
                 "Objektívek száma": {
                     "Value": 2,
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Működési hőmérséklet": {
                     "Value": "-10° C − 65° C (14° F − 149° F)",
-                    "Point": 0.5
+                    "Point": 0.463
                 },
                 "Garancia": {
                     "Value": "1 éves gyártó",
@@ -3138,7 +3162,7 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "4K (3840x2160) UHD",
-                    "Point": 0.5
+                    "Point": 1.0
                 },
                 "Maximális képkockasebesség": {
                     "Value": "60 FPS",
@@ -3150,7 +3174,7 @@
                 },
                 "Látószög (fokban)": {
                     "Value": "140-159°",
-                    "Point": 0.087
+                    "Point": 0.09
                 },
                 "GPS pozíció naplózás": {
                     "Value": "Igen, beépített",
@@ -3162,19 +3186,18 @@
                 },
                 "Nyelvek": {
                     "Value": "angol",
-                    "Point": 0.5
+                    "Point": 0.083
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Auto",
-                    "Point": 0.5
+                    "Point": 1.0
                 },
                 "Videórészlet kiválasztása": {
                     "Value": "1/2/3/5/10 perc",
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "CE",
-                    "Point": 0.5
+                    "Value": "CE"
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD, 32/64/128/256/512gb, Class 10",
@@ -3182,11 +3205,11 @@
                 },
                 "Objektívek száma": {
                     "Value": 2,
-                    "Point": 0.5
+                    "Point": 0.25
                 },
                 "Működési hőmérséklet": {
                     "Value": "-20° C − 65° C (-4° F − 149° F)",
-                    "Point": 0.5
+                    "Point": 0.525
                 },
                 "Garancia": {
                     "Value": "1 éves gyártó",
@@ -3202,7 +3225,7 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "4K (3840x2160) UHD",
-                    "Point": 0.5
+                    "Point": 1.0
                 },
                 "Maximális képkockasebesség": {
                     "Value": "60 FPS",
@@ -3214,7 +3237,7 @@
                 },
                 "Látószög (fokban)": {
                     "Value": "140-159°",
-                    "Point": 0.087
+                    "Point": 0.09
                 },
                 "GPS pozíció naplózás": {
                     "Value": "Igen, beépített",
@@ -3226,7 +3249,7 @@
                 },
                 "Nyelvek": {
                     "Value": "angol",
-                    "Point": 0.5
+                    "Point": 0.083
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Igen",
@@ -3237,8 +3260,7 @@
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "FCC, CE",
-                    "Point": 0.5
+                    "Value": "FCC, CE"
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD, 8/16/32/64/128/256/512gb, Class 10",
@@ -3246,11 +3268,11 @@
                 },
                 "Objektívek száma": {
                     "Value": 1,
-                    "Point": 0.5
+                    "Point": 0.125
                 },
                 "Működési hőmérséklet": {
                     "Value": "-20° C − 55° C (-4° F − 141° F)",
-                    "Point": 0.5
+                    "Point": 0.463
                 },
                 "Garancia": {
                     "Value": "1 éves gyártó",
@@ -3266,11 +3288,11 @@
                 },
                 "Maximális videófelbontás": {
                     "Value": "4K (3840x2160) UHD",
-                    "Point": 0.5
+                    "Point": 1.0
                 },
                 "Maximális képkockasebesség": {
                     "Value": "30 FPS",
-                    "Point": 0.333
+                    "Point": 0.5
                 },
                 "Tervezett lefedettség": {
                     "Value": "Elülső + belső + hátsó",
@@ -3278,7 +3300,7 @@
                 },
                 "Látószög (fokban)": {
                     "Value": "160-180°",
-                    "Point": 0.176
+                    "Point": 0.186
                 },
                 "GPS pozíció naplózás": {
                     "Value": "Igen, beépített",
@@ -3290,19 +3312,18 @@
                 },
                 "Nyelvek": {
                     "Value": "angol",
-                    "Point": 0.5
+                    "Point": 0.083
                 },
                 "Nappali/éjszakai mód": {
                     "Value": "Auto",
-                    "Point": 0.5
+                    "Point": 1.0
                 },
                 "Videórészlet kiválasztása": {
                     "Value": "1/3/5/10 perc",
                     "Point": 0.5
                 },
                 "Tanúsítvány": {
-                    "Value": "",
-                    "Point": 0.5
+                    "Value": ""
                 },
                 "Memóriakártya típusa": {
                     "Value": "MicroSD, 128gb, Class 10",
@@ -3310,11 +3331,11 @@
                 },
                 "Objektívek száma": {
                     "Value": 3,
-                    "Point": 0.5
+                    "Point": 0.375
                 },
                 "Működési hőmérséklet": {
                     "Value": "-10° C − 65° C (14° F − 149° F)",
-                    "Point": 0.5
+                    "Point": 0.463
                 },
                 "Garancia": {
                     "Value": "1 éves gyártó",
@@ -3325,6 +3346,161 @@
 
         let availableIds = []; // Keep track of available IDs (including deleted ones)
         let highestId = 2; // Start with 2 as we have products 1 and 2 by default
+
+        function renumberProductColumns() {
+            // Get all unique product IDs from the table
+            const productIds = getAllProductIds();
+
+            // Early exit if no products
+            if (productIds.length === 0) return;
+
+            // Sort the product IDs numerically
+            productIds.sort((a, b) => a - b);
+
+            // Create a mapping of old IDs to new sequential IDs
+            const idMapping = {};
+            for (let i = 0; i < productIds.length; i++) {
+                idMapping[productIds[i]] = i + 1; // New IDs start from 1
+            }
+
+            // Check if renumbering is actually needed
+            let needsRenumbering = false;
+            for (let i = 0; i < productIds.length; i++) {
+                if (productIds[i] !== i + 1) {
+                    needsRenumbering = true;
+                    break;
+                }
+            }
+
+            // If the IDs are already sequential (1,2,3...), no need to renumber
+            if (!needsRenumbering) return;
+
+            // Update header text
+            const headerCells = document.querySelectorAll('#header-row th[data-product-id]');
+            headerCells.forEach(cell => {
+                const oldId = parseInt(cell.getAttribute('data-product-id'));
+                const newId = idMapping[oldId];
+
+                // Skip if ID doesn't need changing
+                if (oldId === newId) return;
+
+                // Update the header text
+                // First, get the current text content
+                let headerText = cell.textContent.trim();
+                // Remove any numbers and trailing spaces from the text
+                headerText = headerText.replace(/Termék\s+\d+/, '');
+                // Set the new text with the new ID
+                cell.textContent = `Termék ${newId} ${headerText}`;
+
+                // Update the data-product-id attribute
+                cell.setAttribute('data-product-id', newId);
+            });
+
+            // Update all other elements with data-product-id
+            document.querySelectorAll('[data-product-id]').forEach(element => {
+                if (element.tagName === 'TH') return; // We already handled headers
+
+                const oldId = parseInt(element.getAttribute('data-product-id'));
+                const newId = idMapping[oldId];
+
+                // Skip if ID doesn't need changing
+                if (oldId === newId) return;
+
+                // Update the data-product-id attribute
+                element.setAttribute('data-product-id', newId);
+
+                // Update element IDs if they follow the pattern product{id}-*
+                if (element.id && element.id.startsWith(`product${oldId}`)) {
+                    const newId = idMapping[oldId];
+                    element.id = element.id.replace(`product${oldId}`, `product${newId}`);
+                }
+            });
+
+            // Update dropdown IDs and their onchange handlers
+            document.querySelectorAll('select[id^="product"]').forEach(select => {
+                const idMatch = select.id.match(/product(\d+)/);
+                if (!idMatch) return;
+
+                const oldId = parseInt(idMatch[1]);
+                const newId = idMapping[oldId];
+
+                // Skip if ID doesn't need changing
+                if (oldId === newId) return;
+
+                // Update the select ID
+                select.id = `product${newId}`;
+
+                // Update the onchange attribute
+                select.setAttribute('onchange', `updateComparison(${newId})`);
+            });
+
+            // Reset availableIds and highestId
+            availableIds = [];
+            highestId = productIds.length;
+
+            // Save the new state
+            saveComparisonState();
+        }
+
+        function resetComparisonToDefault() {
+            // Clear local storage
+            localStorage.removeItem('comparisonState');
+
+            // Get all product IDs - make a copy of the array to avoid modification during iteration
+            const productIds = [...getAllProductIds()];
+
+            // Remove all product columns except 1 and 2
+            productIds.forEach(id => {
+                if (id !== 1 && id !== 2) {
+                    // Direct removal of all cells with this product ID
+                    document.querySelectorAll(`[data-product-id="${id}"]`).forEach(element => {
+                        if (element && element.parentNode) {
+                            element.parentNode.removeChild(element);
+                        }
+                    });
+                }
+            });
+
+            // Reset available IDs and highest ID to initial state
+            availableIds = [];
+            highestId = 2;
+
+            // Clear selections for product 1 and 2
+            const dropdown1 = document.getElementById('product1');
+            const dropdown2 = document.getElementById('product2');
+            if (dropdown1) dropdown1.value = '';
+            if (dropdown2) dropdown2.value = '';
+
+            // Clear all data cells immediately
+            document.querySelectorAll('[id^="product"]').forEach(cell => {
+                if (cell.id.includes('-')) {
+                    cell.textContent = '-';
+                    // Remove any highlighting classes
+                    cell.classList.remove('better-value', 'tied-value');
+                }
+            });
+
+            // Force total points to reset
+            document.getElementById('product1-total-points').textContent = '-';
+            document.getElementById('product2-total-points').textContent = '-';
+
+            // Make the add button visible
+            updateAddButtonVisibility();
+
+            // Ensure columns 1 and 2 have proper headers
+            document.querySelectorAll('#header-row th[data-product-id]').forEach(cell => {
+                const id = parseInt(cell.getAttribute('data-product-id'));
+                if (id === 1 || id === 2) {
+                    let headerText = cell.textContent.trim();
+                    headerText = headerText.replace(/Termék\s+\d+/, '');
+                    cell.textContent = `Termék ${id} ${headerText}`;
+                }
+            });
+
+            // Refresh the table state
+            resetComparison();
+        }
+
 
         // Helper function to reset colors and point displays
         function resetComparison() {
@@ -3341,11 +3517,16 @@
 
         // Get the next available product ID
         function getNextAvailableId() {
-            if (availableIds.length > 0) {
-                return availableIds.shift(); // Take the first available ID
-            } else {
-                return ++highestId; // No available IDs, create a new one
+            // Get all current IDs
+            const productIds = getAllProductIds();
+
+            // Find the first gap in the sequence
+            let nextId = 1;
+            while (productIds.includes(nextId)) {
+                nextId++;
             }
+
+            return nextId;
         }
 
 
@@ -3399,10 +3580,24 @@
                         }
                     });
                 }
+
+                // Make sure columns are numbered sequentially after loading
+                renumberProductColumns();
             } catch (error) {
                 console.error('Error loading comparison state:', error);
             }
         }
+
+        /*function updateAddButtonVisibility() {
+             const addButton = document.getElementById('add-product-btn');
+             const currentProductIds = getAllProductIds();
+
+             if (currentProductIds.length >= 5) {
+                 addButton.style.display = 'none';
+             } else {
+                 addButton.style.display = 'inline-flex';
+             }
+         }*/
 
 
         // Get all unique property names except "sku"
@@ -3437,11 +3632,11 @@
 
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                        <td class="property-label">${prop}</td>
-                        <td id="product1-${prop.replace(/\s+/g, '-')}" data-product-id="1">-</td>
-                        <td id="product2-${prop.replace(/\s+/g, '-')}" data-product-id="2">-</td>
-                        <td></td>
-                    `;
+                                        <td class="property-label">${prop}</td>
+                                        <td id="product1-${prop.replace(/\s+/g, '-')}" data-product-id="1">-</td>
+                                        <td id="product2-${prop.replace(/\s+/g, '-')}" data-product-id="2">-</td>
+                                        <td></td>
+                                    `;
                 tableBody.appendChild(row);
             }
 
@@ -3454,6 +3649,13 @@
 
         // Add a new product column
         function addProductColumn(specificId) {
+            // Check: maximum 5 columns allowed
+            const currentProductIds = getAllProductIds();
+            if (currentProductIds.length >= 5 && !specificId) {
+                alert("Maximum 5 terméket lehet összehasonlítani!");
+                return;
+            }
+
             const productId = specificId || getNextAvailableId();
 
             // Add new header cell
@@ -3485,10 +3687,10 @@
             const newDropdownCell = document.createElement('td');
             newDropdownCell.setAttribute('data-product-id', productId);
             newDropdownCell.innerHTML = `
-                    <select id="product${productId}" onchange="updateComparison(${productId})">
-                        <option value="">Válassz terméket...</option>
-                    </select>
-                `;
+                                <select id="product${productId}" onchange="updateComparison(${productId})">
+                                    <option value="">Válassz terméket...</option>
+                                </select>
+                            `;
             dropdownRow.insertBefore(newDropdownCell, dropdownEmptyCell);
 
             // Add new points cell
@@ -3521,6 +3723,9 @@
             // Reset colors and comparisons when adding a new product
             resetComparison();
             saveComparisonState();
+
+            // Check if we've reached 5 columns and hide the + button if needed
+            updateAddButtonVisibility();
         }
 
         // Remove a product column
@@ -3534,15 +3739,17 @@
                 if (element && element.parentNode) {
                     element.parentNode.removeChild(element);
                 }
-
-                
             });
 
-            
+            renumberProductColumns();
+
             // Reset and recalculate
             resetComparison();
             compareProducts();
             saveComparisonState();
+
+            // Ha eltávolítottunk egy oszlopot, ellenőrizzük, hogy megjelenjen-e a + gomb
+            updateAddButtonVisibility();
         }
 
         // Populate a dropdown with products
@@ -3570,6 +3777,11 @@
 
             //Load any saved state
             loadComparisonState();
+
+            document.getElementById('reset-comparison-btn').addEventListener('click', function (e) {
+                e.preventDefault();
+                resetComparisonToDefault();
+            });
         });
 
         // Get all product IDs currently in the table
@@ -3732,6 +3944,7 @@
             compareProducts();
             saveComparisonState();
         }
+
     </script>
 </body>
 @*</html>*@           
